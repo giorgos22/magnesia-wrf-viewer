@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WRF Magnesia Viewer | COP90 Terrain v6</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root {
+  color-scheme: dark;
+  --panel: rgba(11, 20, 34, 0.92);
+  --line: #2d425b;
+  --cyan: #00d5ff;
+  --yellow: #ffeb3b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+}
+* { box-sizing: border-box; }
+html, body, #map {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  background: #101923;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+.top-brand {
+  position: absolute; z-index: 950; top: 14px; right: 16px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 14px; font-size: 13px; font-weight: bold; color: var(--cyan);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6); backdrop-filter: blur(8px); pointer-events: none;
+}
+
+.legend {
+  position: absolute; z-index: 900; left: 12px; top: 86px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
+  padding: 9px 12px; color: #fff; font-size: 11px; width: 210px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+}
+.legend-title { font-weight: bold; margin-bottom: 6px; color: var(--text); }
+.scale {
+  height: 10px; border-radius: 4px; margin: 4px 0;
+  background: linear-gradient(90deg,#542788,#2c7fb8,#41b6c4,#a1dab4,#ffffcc,#fdae61,#d7191c);
+}
+.scale-labels { display: flex; justify-content: space-between; color: #cbd5e1; font-size: 10px; }
+
+.drawer-toggle-btn {
+  position: absolute; z-index: 1001; right: 16px; top: 50%; transform: translateY(-50%);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 10px; color: #fff; cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; gap: 6px; box-shadow: 0 6px 22px rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+  transition: right 0.28s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.drawer-toggle-btn:hover { border-color: var(--cyan); background: rgba(18, 33, 54, 0.96); }
+.drawer-toggle-btn.open { right: 306px; border-color: var(--cyan); }
+.drawer-toggle-btn svg { width: 24px; height: 24px; fill: #fff; }
+.drawer-toggle-btn span { font-size: 10px; font-weight: bold; color: var(--text); }
+
+.params-drawer {
+  position: absolute; z-index: 1000; top: 58px; right: -310px; width: 290px;
+  max-height: calc(100vh - 180px); overflow-y: auto; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px; padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px); transition: right 0.28s ease;
+}
+.params-drawer.open { right: 16px; }
+.drawer-header {
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 12px;
+}
+.drawer-header h3 { margin: 0; font-size: 14px; color: var(--cyan); }
+.drawer-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
+.drawer-close:hover { color: #fff; }
+
+.param-section { margin-bottom: 16px; }
+.section-title {
+  font-size: 11px; font-weight: bold; color: var(--cyan); text-transform: uppercase;
+  border-bottom: 1px solid rgba(45, 66, 91, 0.7); padding-bottom: 4px; margin-bottom: 10px;
+}
+.option-item {
+  display: flex; align-items: center; gap: 9px; padding: 6px 4px; font-size: 13px;
+  color: var(--text); cursor: pointer; border-radius: 6px;
+}
+.option-item:hover { background: rgba(255,255,255,0.06); }
+.option-item input { accent-color: var(--cyan); width: 15px; height: 15px; margin: 0; cursor: pointer; }
+.status-box {
+  margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(45, 66, 91, 0.6);
+  font-size: 11px; color: var(--yellow); line-height: 1.4; word-break: break-all;
+}
+
+.bottom-time-bar {
+  position: absolute; z-index: 1000; bottom: 18px; left: 50%; transform: translateX(-50%);
+  width: min(720px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 14px; padding: 12px 20px 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+}
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.step-btn {
+  background: #18273a; border: 1px solid #3c5472; color: #fff; width: 30px; height: 30px;
+  border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px;
+}
+.step-btn:hover:not(:disabled) { background: #223752; border-color: var(--cyan); }
+.step-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.time-bound { font-size: 12px; color: var(--muted); font-weight: bold; min-width: 38px; text-align: center; }
+.bottom-time-bar input[type="range"] { flex: 1; accent-color: var(--cyan); cursor: pointer; height: 6px; }
+.time-info-row { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 8px; }
+.date-highlight { font-size: 17px; font-weight: bold; color: var(--yellow); }
+.step-badge { font-size: 11px; color: var(--muted); background: rgba(255,255,255,0.07); padding: 2px 8px; border-radius: 10px; }
+.ticks-bar {
+  height: 6px; margin: 6px 46px 0;
+  background-image: repeating-linear-gradient(to right, rgba(148, 163, 184, 0.45) 0px, rgba(148, 163, 184, 0.45) 1px, transparent 1px, transparent 14px);
+}
+
+/* ΔΙΟΡΘΩΣΗ: Υψηλότερο z-index για να φαίνεται ομαλά πάνω από τα tiles */
+.wrf-smooth-canvas { position: absolute; left: 0; top: 0; z-index: 650; pointer-events: none; }
+.wind-particles-canvas { position:absolute !important; left:0 !important; top:0 !important; z-index:850 !important; pointer-events:none !important; display:block; }
+.leaflet-control-attribution { font-size: 9px !important; background: rgba(11,20,34,0.7) !important; color: #94a3b8 !important; }
+.station-label {
+  background: rgba(10, 18, 29, 0.85); border: 1px solid #49617d; color: #fff;
+  font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+}
+
+/* Grid-point interaction and forecast panel */
+.grid-hover-tip {
+  position:absolute; z-index:1100; display:none; pointer-events:none;
+  padding:7px 10px; border:1px solid #31516e; border-radius:8px;
+  color:#eaf6ff; background:rgba(8,18,32,.96); box-shadow:0 5px 18px #0009;
+  font-size:12px; line-height:1.45; white-space:nowrap;
+}
+.grid-hover-tip strong { color:#45d7ff; }
+.grid-point-panel {
+  position:absolute; z-index:1200; top:66px; right:16px;
+  width:min(370px, calc(100vw - 32px)); max-height:calc(100dvh - 210px);
+  overflow:auto; display:none; color:#e2e8f0;
+  background:rgba(13,22,39,.97); border:1px solid #30445f; border-radius:16px;
+  box-shadow:0 12px 38px #000b; backdrop-filter:blur(12px);
+}
+.grid-point-panel.open { display:block; }
+.gp-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  padding:16px 17px 12px; border-bottom:1px solid #26364d; }
+.gp-kicker { color:#4acfff; font-size:11px; font-weight:bold; letter-spacing:.04em; }
+.gp-title { margin:5px 0 4px; color:#fff; font-size:19px; font-weight:bold; }
+.gp-coords { color:#8fa4bd; font-size:12px; }
+.gp-close { border:0; background:transparent; color:#9aabc0; font-size:24px; cursor:pointer; line-height:1; }
+.gp-close:hover { color:#fff; }
+.gp-body { padding:13px 16px 16px; }
+.gp-cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.gp-card { min-height:91px; padding:12px; border:1px solid #2b3b54; border-radius:13px; background:#1a263b; }
+.gp-label { color:#9eafc4; font-size:12px; margin-bottom:8px; }
+.gp-value { color:#fff; font-size:25px; font-weight:bold; line-height:1.1; }
+.gp-unit { color:#9eafc4; font-size:13px; font-weight:normal; }
+.gp-sub { color:#8fa1b8; font-size:11px; margin-top:7px; }
+.gp-chart-wrap { margin-top:13px; padding:12px; border:1px solid #2b3b54; border-radius:13px; background:#18243a; }
+.gp-chart-title { font-size:13px; font-weight:bold; color:#dbe7f5; margin-bottom:9px; }
+#gpChart { display:block; width:100%; height:150px; }
+.gp-chart-legend { display:flex; gap:16px; flex-wrap:wrap; color:#a9b8ca; font-size:11px; margin-top:5px; }
+.gp-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; background:#ff9848; }
+.gp-dot.rain { background:#48baff; }
+.gp-foot { margin-top:11px; color:#8296af; font-size:11px; line-height:1.45; }
+@media (max-width:600px) {
+  .grid-point-panel {
+    top:58px; right:14px; left:14px; width:auto;
+    max-height:calc(100dvh - 230px);
+    border-radius:14px;
+  }
+  .gp-head { padding:11px 14px 9px; }
+  .gp-model-credit { font-size:9px; margin-top:5px; }
+  .gp-coords { font-size:11px; }
+  .gp-body { padding:10px 12px 12px; }
+  .gp-cards { gap:8px; }
+  .gp-card { min-height:78px; padding:10px; }
+  .gp-label { font-size:11px; margin-bottom:6px; }
+  .gp-value { font-size:21px; }
+  .gp-sub { font-size:10px; margin-top:5px; }
+  .gp-chart-wrap { margin-top:10px; padding:10px; }
+  #gpChart { height:125px; }
+  .gp-foot { font-size:10px; margin-top:8px; }
+  .gp-close { font-size:22px; }
+}
+
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="gridHoverTip" class="grid-hover-tip"></div>
+<section id="gridPointPanel" class="grid-point-panel" aria-live="polite">
+  <div class="gp-head">
+    <div class="gp-head-main">
+      <div class="gp-coords" id="gpCoords">--</div>
+      <div class="gp-model-credit">WRF MAGNESIA 3,5 km · MODEL TSIANTOS</div>
+    </div>
+    <button id="gpClose" class="gp-close" type="button" aria-label="Κλείσιμο">&times;</button>
+  </div>
+  <div class="gp-body">
+    <div class="gp-cards">
+      <div class="gp-card"><div class="gp-label">Θερμοκρασία 2 m</div><div class="gp-value" id="gpTemp">--</div><div class="gp-sub" id="gpTempSub">T2</div></div>
+      <div class="gp-card"><div class="gp-label">Υετός</div><div class="gp-value" id="gpRain">--</div><div class="gp-sub">RAIN</div></div>
+      <div class="gp-card"><div class="gp-label">Άνεμος 10 m</div><div class="gp-value" id="gpWind">—</div><div class="gp-sub" id="gpWindDir">U10 / V10</div></div>
+<div class="gp-card"><div class="gp-label">Υψόμετρο πλέγματος</div><div class="gp-value" id="gpHeight">--</div><div class="gp-sub">Μόνο εφόσον παρέχεται από τα δεδομένα</div></div>
+      <div class="gp-card"><div class="gp-label">Χρονικό βήμα</div><div class="gp-value" id="gpTime" style="font-size:16px">--</div><div class="gp-sub" id="gpIndex">--</div></div>
+    </div>
+    <div class="gp-chart-wrap">
+      <div class="gp-chart-title">Πρόγνωση σημείου – επόμενες 48 ώρες</div>
+      <canvas id="gpChart" height="150"></canvas>
+      <div class="gp-chart-legend"><span><i class="gp-dot"></i>Θερμοκρασία</span><span><i class="gp-dot rain"></i>Υετός</span></div>
+    </div>
+    <div class="gp-foot" id="gpAvailability">Οι τιμές προέρχονται από το ενεργό χρονικό βήμα του WRF.</div>
+  </div>
+</section>
+<div class="top-brand">WRF MAGNESIA VIEWER v6 · COP90 TERRAIN</div>
+
+<div class="legend">
+  <div class="legend-title" id="legendTitle">Θερμοκρασία 2 m (°C)</div>
+  <div class="scale" id="legendScale"></div>
+  <div class="scale-labels" id="legendLabels"><span>≤0</span><span>10</span><span>20</span><span>30</span><span>35+</span></div>
+</div>
+
+<button id="drawerToggle" class="drawer-toggle-btn" type="button" title="Επιλογή Παραμέτρων">
+  <svg viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="10" y="3" width="5" height="5" rx="1"/><rect x="17" y="3" width="4" height="5" rx="1"/><rect x="3" y="10" width="5" height="5" rx="1"/><rect x="10" y="10" width="5" height="5" rx="1"/><rect x="17" y="10" width="4" height="5" rx="1"/><rect x="3" y="17" width="5" height="4" rx="1"/><rect x="10" y="17" width="5" height="4" rx="1"/><rect x="17" y="17" width="4" height="4" rx="1"/></svg>
+  <span>ΠΑΡΑΜΕΤΡΟΙ</span>
+</button>
+
+<aside id="paramsDrawer" class="params-drawer">
+  <div class="drawer-header">
+    <h3>ΕΠΙΛΟΓΗ ΠΑΡΑΜΕΤΡΩΝ</h3>
+    <button id="drawerClose" class="drawer-close" type="button">&times;</button>
+  </div>
+  <div class="param-section">
+    <div class="section-title">Μεταβλητές</div>
+    <label class="option-item"><input type="radio" name="wrfField" value="temp" checked><span>Θερμοκρασία 2m (°C)</span></label>
+    <label class="option-item"><input type="radio" name="wrfField" value="rain"><span>Υετός (mm)</span></label>
+<label class="option-item"><input type="radio" name="wrfField" value="wind"><span>Άνεμος 10 m (ένταση + σωματίδια)</span></label>
+  </div>
+  <div class="param-section">
+    <div class="section-title">Επίπεδα Χάρτη</div>
+    <label class="option-item"><input id="wrfToggle" type="checkbox" checked><span>Δεδομένα WRF</span></label>
+    <label class="option-item"><input id="hillshadeToggle" type="checkbox"><span>Πρόσθετη σκίαση Esri</span></label>
+    <label class="option-item"><input id="terrainToggle" type="checkbox" checked><span>Έγχρωμο ανάγλυφο COP90 (90 m)</span></label>
+  </div>
+  <div class="param-section">
+    <div class="section-title">Σταθμοί</div>
+    <label class="option-item"><input id="stationsToggle" type="checkbox"><span>Εμφάνιση Σταθμών Μαγνησίας</span></label>
+  </div>
+  <div class="status-box" id="status">Αναμονή φόρτωσης wrf_data.js...</div>
+</aside>
+
+<div class="bottom-time-bar">
+  <div class="slider-row">
+    <button id="prevTime" class="step-btn" type="button" disabled>◀</button>
+    <span class="time-bound" id="startTimeLabel">--:--</span>
+    <input id="timeSlider" type="range" min="0" max="0" value="0" step="1" disabled>
+    <span class="time-bound" id="endTimeLabel">--:--</span>
+    <button id="nextTime" class="step-btn" type="button" disabled>▶</button>
+  </div>
+  <div class="time-info-row">
+    <span class="date-highlight" id="dateDisplay">Φόρτωση δεδομένων…</span>
+    <span class="step-badge" id="timeLabel">-- / --</span>
+  </div>
+  <div class="ticks-bar"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+
+const map = L.map('map', { preferCanvas: true, zoomControl: true }).setView([39.225, 22.825], 9);
+
+const topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19, attribution: 'Tiles © Esri'
+}).addTo(map);
+
+// COP90 terrain image: place above the Esri basemap and below WRF canvas.
+map.createPane('cop90TerrainPane');
+map.getPane('cop90TerrainPane').style.zIndex = 350;
+map.getPane('cop90TerrainPane').style.pointerEvents = 'none';
+
+const cop90Bounds = [[38.45, 21.20], [40.70, 24.65]];
+const terrainOverlay = L.imageOverlay('./MAGNESIA_TERRAIN_SHADED.png', cop90Bounds, {
+  pane: 'cop90TerrainPane',
+  opacity: 0.96,
+  interactive: false,
+  crossOrigin: false
+}).addTo(map);
+
+const hill = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 16, opacity: 0.22, attribution: 'Hillshade © Esri'
+});
+
+let wrfOverlay = null;
+const $ = id => document.getElementById(id);
+
+function getSelectedField() {
+  const checked = document.querySelector('input[name="wrfField"]:checked');
+  return checked ? checked.value : 'temp';
+}
+
+function getWRFData() {
+  if (window.WRF_DATA) return window.WRF_DATA;
+  try { if (typeof WRF_DATA !== 'undefined') return WRF_DATA; } catch (e) {}
+  return null;
+}
+
+let selectedGridPoint = null;
+function status(msg) { $('status').textContent = msg; }
+
+const STATIONS = [
+  { name: 'Κωφοί', lat: 39.12460, lon: 22.72500 },
+  { name: 'Αλμυρός', lat: 39.17800, lon: 22.75600 },
+  { name: 'Βόλος', lat: 39.36200, lon: 22.94200 },
+  { name: 'Ανάβρα', lat: 39.07400, lon: 22.58300 },
+  { name: 'Χάνια (Πήλιο)', lat: 39.39500, lon: 23.05000 }
+];
+const stationsLayer = L.layerGroup();
+STATIONS.forEach(st => {
+  const marker = L.circleMarker([st.lat, st.lon], {
+    radius: 5, fillColor: '#ffcc00', color: '#0b1422', weight: 1.5, fillOpacity: 1
+  });
+  marker.bindTooltip(st.name, { permanent: true, direction: 'right', offset: [6, 0], className: 'station-label' });
+  stationsLayer.addLayer(marker);
+});
+
+/* ΕΛΕΓΜΕΝΗ ΟΜΑΛΗ ΠΑΡΕΜΒΟΛΗ (SMOOTH CANVAS OVERLAY) */
+class SmoothWRFOverlay {
+  constructor(map) {
+    this.map = map; this.visible = true; this.opacity = 0.70; this.resolution = 1.0;
+    this.data = null; this.type = 'temp'; this.index = 0;
+    this.canvas = L.DomUtil.create('canvas', 'wrf-smooth-canvas', map.getContainer());
+    this.ctx = this.canvas.getContext('2d');
+    this.redraw = this.draw.bind(this);
+    map.on('moveend zoomend resize', this.redraw);
+  }
+  setData(data, type, index) { this.data = data; this.type = type; this.index = index; this.draw(); }
+  setVisible(v) { this.visible = v; this.canvas.style.display = v ? 'block' : 'none'; if (v) this.draw(); }
+  
+  colorFor(v) {
+    const stops = this.type === 'temp'
+      ? [[-5,[67,35,112]],[0,[84,39,136]],[5,[44,127,184]],[10,[65,182,196]],[15,[161,218,180]],[20,[255,255,204]],[25,[254,217,118]],[30,[253,141,60]],[35,[240,59,32]],[40,[189,0,38]]]
+      : this.type === 'wind'
+        ? [[0,[226,232,240]],[2,[125,211,252]],[4,[56,189,248]],[6,[34,197,94]],[8,[250,204,21]],[10,[249,115,22]],[15,[220,38,38]],[20,[126,34,206]]]
+        : [[0.1,[219,234,254]],[0.5,[147,197,253]],[1,[56,189,248]],[2.5,[34,197,94]],[5,[234,179,8]],[10,[249,115,22]],[20,[220,38,38]],[40,[126,34,206]]];
+    if (v <= stops[0][0]) return stops[0][1];
+    for (let k = 1; k < stops.length; k++) {
+      if (v <= stops[k][0]) {
+        const [v0, c0] = stops[k - 1], [v1, c1] = stops[k], f = (v - v0) / (v1 - v0);
+        return c0.map((c, i) => Math.round(c + (c1[i] - c) * f));
+      }
+    }
+    return stops[stops.length - 1][1];
+  }
+
+  triangle(img, w, h, a, b, c) {
+    if (!a || !b || !c) return;
+    const den = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
+    if (Math.abs(den) < 1e-8) return;
+    const x0 = Math.max(0, Math.floor(Math.min(a.x, b.x, c.x))), x1 = Math.min(w - 1, Math.ceil(Math.max(a.x, b.x, c.x)));
+    const y0 = Math.max(0, Math.floor(Math.min(a.y, b.y, c.y))), y1 = Math.min(h - 1, Math.ceil(Math.max(a.y, b.y, c.y)));
+    const inv = 1 / den, px = img.data, isRain = this.type === 'rain';
+    
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const xx = x + .5, yy = y + .5;
+        const wa = ((b.y - c.y) * (xx - c.x) + (c.x - b.x) * (yy - c.y)) * inv;
+        const wb = ((c.y - a.y) * (xx - c.x) + (a.x - c.x) * (yy - c.y)) * inv;
+        const wc = 1 - wa - wb;
+        if (wa < -.002 || wb < -.002 || wc < -.002) continue;
+        const val = wa * a.v + wb * b.v + wc * c.v;
+        if (!Number.isFinite(val) || (isRain && val < 0.05)) continue;
+        const col = this.colorFor(val), p = (y * w + x) * 4;
+        px[p] = col[0]; px[p + 1] = col[1]; px[p + 2] = col[2]; px[p + 3] = Math.round(this.opacity * 255);
+      }
+    }
+  }
+
+  draw() {
+    if (!this.visible || !this.data) return;
+    const field = this.type === 'temp' ? this.data.T2 : this.type === 'rain' ? this.data.RAIN : null;
+    const vals = this.type === 'wind'
+      ? (this.data.U10?.[this.index] || []).map((row, i) => row.map((u, j) => Math.hypot(Number(u), Number(this.data.V10?.[this.index]?.[i]?.[j]))))
+      : field?.[this.index];
+    if (this.type === 'wind') this.opacity = 0.58; else this.opacity = 0.70;
+    const lat = this.data.lats;
+    const lon = this.data.lons;
+    
+    if (!Array.isArray(vals) || !Array.isArray(lat) || !Array.isArray(lon)) {
+      status('Σφάλμα: Δεν βρέθηκαν τα πεδία T2/RAIN ή lats/lons.');
+      return;
+    }
+    
+    const rows = Math.min(vals.length, lat.length, lon.length);
+    const cols = Math.min(vals[0]?.length || 0, lat[0]?.length || 0, lon[0]?.length || 0);
+    if (rows < 2 || cols < 2) return;
+
+    const size = this.map.getSize();
+    const scale = this.resolution;
+    const w = Math.max(1, Math.ceil(size.x * scale));
+    const h = Math.max(1, Math.ceil(size.y * scale));
+    
+    this.canvas.width = w; this.canvas.height = h;
+    this.canvas.style.width = size.x + 'px'; this.canvas.style.height = size.y + 'px';
+    
+    const img = this.ctx.createImageData(w, h);
+    const grid = new Array(rows);
+    
+    for (let i = 0; i < rows; i++) {
+      grid[i] = new Array(cols);
+      for (let j = 0; j < cols; j++) {
+        const la = Number(lat[i]?.[j]), lo = Number(lon[i]?.[j]), v = Number(vals[i]?.[j]);
+        if (!Number.isFinite(la) || !Number.isFinite(lo) || !Number.isFinite(v)) continue;
+        const p = this.map.latLngToContainerPoint([la, lo]);
+        grid[i][j] = { x: p.x * scale, y: p.y * scale, v };
+      }
+    }
+    
+    let trianglesDrawn = 0;
+    for (let i = 0; i < rows - 1; i++) {
+      for (let j = 0; j < cols - 1; j++) {
+        const a = grid[i][j], b = grid[i][j + 1], c = grid[i + 1][j + 1], d = grid[i + 1][j];
+        if (a && b && c) { this.triangle(img, w, h, a, b, c); trianglesDrawn++; }
+        if (a && c && d) { this.triangle(img, w, h, a, c, d); trianglesDrawn++; }
+      }
+    }
+    
+    this.ctx.putImageData(img, 0, 0);
+    status(`OK: Σχεδιάστηκαν ${trianglesDrawn} τρίγωνα (Πλέγμα ${rows}×${cols})`);
+  }
+}
+
+/* ===== WRF 10m WIND PARTICLES - visibility/robustness fix ===== */
+class WindParticleLayer {
+  constructor(map) {
+    this.map=map; this.data=null; this.index=0; this.enabled=false;
+    this.canvas=L.DomUtil.create('canvas','wind-particles-canvas',map.getContainer());
+    // Keep the particle canvas as a direct child of the map container,
+    // above Leaflet tile/vector panes and below the viewer's UI panels.
+    map.getContainer().appendChild(this.canvas);
+    Object.assign(this.canvas.style,{position:'absolute',left:'0',top:'0',zIndex:'850',pointerEvents:'none',display:'block'});
+    this.ctx=this.canvas.getContext('2d'); this.particles=[]; this.frame=null; this.last=0; this.grid=[];
+    map.on('moveend zoomend resize',()=>this.prepareGrid());
+  }
+  setData(data,index,enabled) {
+    this.data=data; this.index=index; this.enabled=enabled;
+    if(!enabled){this.stop();this.clear();return;}
+    this.prepareGrid();
+    if(!this.grid.length){status('Άνεμος: δεν δημιουργήθηκε πλέγμα U10/V10 για το επιλεγμένο βήμα.');return;}
+    this.start();
+  }
+  prepareGrid() {
+    if(!this.data||!this.enabled)return;
+    const size=this.map.getSize(), ratio=Math.max(1,window.devicePixelRatio||1);
+    this.canvas.width=Math.max(1,Math.round(size.x*ratio));
+    this.canvas.height=Math.max(1,Math.round(size.y*ratio));
+    this.canvas.style.width=size.x+'px'; this.canvas.style.height=size.y+'px';
+    this.ctx.setTransform(ratio,0,0,ratio,0,0);
+    const U=this.data.U10?.[this.index], V=this.data.V10?.[this.index]; this.grid=[];
+    if(!Array.isArray(U)||!Array.isArray(V)){status(`Άνεμος: λείπουν U10/V10 στο βήμα ${this.index+1}.`);return;}
+    const rows=Math.min(U.length,V.length,this.data.lats?.length||0,this.data.lons?.length||0);
+    for(let i=0;i<rows;i++){
+      const cols=Math.min(U[i]?.length||0,V[i]?.length||0,this.data.lats[i]?.length||0,this.data.lons[i]?.length||0);
+      for(let j=0;j<cols;j++){
+        const u=Number(U[i][j]),v=Number(V[i][j]),lat=Number(this.data.lats[i][j]),lon=Number(this.data.lons[i][j]);
+        if(![u,v,lat,lon].every(Number.isFinite))continue;
+        const pt=this.map.latLngToContainerPoint([lat,lon]);
+        this.grid.push({x:pt.x,y:pt.y,u,v,speed:Math.hypot(u,v)});
+      }
+    }
+    if(this.grid.length){
+      if(!this.particles.length)this.seed();
+      status(`Άνεμος 10 m: ενεργός — ${this.grid.length.toLocaleString('el-GR')} σημεία πλέγματος U10/V10.`);
+    }
+  }
+  seed(){
+    const size=this.map.getSize(), count=Math.max(140,Math.min(260,Math.round(size.x*size.y/5000)));
+    this.particles=Array.from({length:count},()=>({x:Math.random()*size.x,y:Math.random()*size.y,age:Math.random()*45}));
+  }
+  nearest(x,y){
+    let best=null,bd=Infinity;
+    for(const g of this.grid){const dx=g.x-x,dy=g.y-y,d=dx*dx+dy*dy;if(d<bd){bd=d;best=g;}}
+    return best;
+  }
+  start(){
+    if(this.frame!==null)return;
+    this.last=performance.now();
+    const loop=now=>{
+      if(!this.enabled||!this.grid.length){this.frame=null;return;}
+      const dt=Math.min(.05,(now-this.last)/1000||.016);this.last=now;
+      const size=this.map.getSize();
+      this.ctx.globalCompositeOperation='destination-in';this.ctx.fillStyle='rgba(0,0,0,.82)';
+      this.ctx.fillRect(0,0,size.x,size.y);this.ctx.globalCompositeOperation='source-over';
+      this.ctx.lineCap='round';
+      for(const p of this.particles){
+        const g=this.nearest(p.x,p.y);
+        if(!g||g.speed<.10||p.x<0||p.y<0||p.x>size.x||p.y>size.y||p.age>85){
+          p.x=Math.random()*size.x;p.y=Math.random()*size.y;p.age=0;continue;
+        }
+        const scale=2.0;
+        const nx=p.x+g.u*scale*dt,ny=p.y-g.v*scale*dt;
+        const color='#102a43';
+        this.ctx.beginPath();this.ctx.moveTo(p.x,p.y);this.ctx.lineTo(nx,ny);
+        this.ctx.strokeStyle=color;this.ctx.globalAlpha=.96;this.ctx.lineWidth=2.8;this.ctx.stroke();
+        // Bright particle head makes even light winds visible.
+        this.ctx.beginPath();this.ctx.arc(nx,ny,1.6,0,Math.PI*2);
+        this.ctx.fillStyle='#071827';this.ctx.globalAlpha=.98;this.ctx.fill();
+        p.x=nx;p.y=ny;p.age++;
+      }
+      this.ctx.globalAlpha=1;this.frame=requestAnimationFrame(loop);
+    };
+    this.frame=requestAnimationFrame(loop);
+  }
+  stop(){if(this.frame!==null)cancelAnimationFrame(this.frame);this.frame=null;}
+  clear(){if(this.ctx)this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);}
+}
+const windParticles=new WindParticleLayer(map);
+/* ===== END WIND PARTICLES ===== */
+
+wrfOverlay = new SmoothWRFOverlay(map);
+
+function updateLegend(type) {
+  if (type === 'temp') {
+    $('legendTitle').textContent = 'Θερμοκρασία 2 m (°C)';
+    $('legendScale').style.background = 'linear-gradient(90deg,#542788,#2c7fb8,#41b6c4,#a1dab4,#ffffcc,#fed976,#fd8d3c,#bd0026)';
+    $('legendLabels').innerHTML = '<span>≤0</span><span>10</span><span>20</span><span>30</span><span>35+</span>';
+  } else if (type === 'rain') {
+    $('legendTitle').textContent = 'Υετός (mm)';
+    $('legendScale').style.background = 'linear-gradient(90deg,#dbeafe,#93c5fd,#38bdf8,#22c55e,#eab308,#f97316,#dc2626)';
+    $('legendLabels').innerHTML = '<span>0.1</span><span>1</span><span>5</span><span>10</span><span>20+</span>';
+  } else {
+    $('legendTitle').textContent = 'Ένταση ανέμου 10 m (m/s)';
+    $('legendScale').style.background = 'linear-gradient(90deg,#e2e8f0,#7dd3fc,#38bdf8,#22c55e,#facc15,#f97316,#dc2626,#7e22ce)';
+    $('legendLabels').innerHTML = '<span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>15+</span>';
+  }
+}
+
+function renderData(index) {
+  const D = getWRFData(); if (!D) return;
+  if (!Array.isArray(D.times) || !D.times.length) return;
+  index = Math.max(0, Math.min(D.times.length - 1, index));
+  const type = getSelectedField();
+  const field = type === 'temp' ? D.T2 : type === 'rain' ? D.RAIN : D.U10;
+  
+  if (!Array.isArray(field?.[index])) {
+    status(`Σφάλμα: Η μεταβλητή ${type} λείπει για το βήμα ${index}`);
+    return;
+  }
+  
+  wrfOverlay.setData(D, type, index);
+  windParticles.setData(D, index, type === 'wind');
+  if (activeGridPoint && gridPointPanel.classList.contains('open')) updateGridPanel();
+  updateLegend(type);
+  $('timeSlider').value = index;
+  $('timeLabel').textContent = `Βήμα ${String(index + 1).padStart(2, '0')} / ${D.times.length}`;
+  $('dateDisplay').textContent = String(D.times[index] ?? '').replace('T', ' | ');
+  $('prevTime').disabled = index <= 0;
+  $('nextTime').disabled = index >= D.times.length - 1;
+}
+
+function loadData() {
+  const s = document.createElement('script');
+  s.src = './wrf_data.js?v=' + Date.now();
+  s.onload = () => {
+    const D = getWRFData();
+    if (!D) { status('ΣΦΑΛΜΑ: Το wrf_data.js φορτώθηκε αλλά το WRF_DATA είναι άδειο.'); return; }
+    if (!Array.isArray(D.times) || !D.times.length) { status('ΣΦΑΛΜΑ: Δεν βρέθηκαν χρόνοι στο WRF_DATA.'); return; }
+    
+    if (Array.isArray(D.lats) && D.lats.length > 0) {
+      const flatLats = D.lats.flat().filter(Number.isFinite);
+      const flatLons = D.lons.flat().filter(Number.isFinite);
+      if (flatLats.length > 0 && flatLons.length > 0) {
+        const bounds = [[Math.min(...flatLats), Math.min(...flatLons)], [Math.max(...flatLats), Math.max(...flatLons)]];
+        map.fitBounds(bounds, { padding: [30, 30] });
+      }
+    }
+
+    $('timeSlider').max = D.times.length - 1;
+    $('timeSlider').value = 0;
+    $('timeSlider').disabled = false;
+    $('prevTime').disabled = false;
+    $('nextTime').disabled = false;
+    $('startTimeLabel').textContent = D.times[0].match(/(\d{2}:\d{2})/)?.[1] || '--:--';
+    $('endTimeLabel').textContent = D.times[D.times.length - 1].match(/(\d{2}:\d{2})/)?.[1] || '--:--';
+    
+    map.invalidateSize();
+    renderData(0);
+    status('Επιτυχής φόρτωση δεδομένων WRF!');
+  };
+  s.onerror = () => status('ΣΦΑΛΜΑ: Δεν βρέθηκε το αρχείο wrf_data.js στον φάκελο.');
+  document.head.appendChild(s);
+}
+
+function toggleDrawer(forceState) {
+  const drawer = $('paramsDrawer');
+  const btn = $('drawerToggle');
+  const isOpen = typeof forceState === 'boolean' ? forceState : !drawer.classList.contains('open');
+  drawer.classList.toggle('open', isOpen);
+  btn.classList.toggle('open', isOpen);
+}
+$('drawerToggle').addEventListener('click', () => toggleDrawer());
+$('drawerClose').addEventListener('click', () => toggleDrawer(false));
+
+$('timeSlider').addEventListener('input', e => renderData(Number(e.target.value)));
+document.querySelectorAll('input[name="wrfField"]').forEach(radio => {
+  radio.addEventListener('change', () => renderData(Number($('timeSlider').value)));
+});
+$('hillshadeToggle').addEventListener('change', e => e.target.checked ? hill.addTo(map) : map.removeLayer(hill));
+$('terrainToggle').addEventListener('change', e => e.target.checked ? terrainOverlay.addTo(map) : map.removeLayer(terrainOverlay));
+$('wrfToggle').addEventListener('change', e => { wrfOverlay.setVisible(e.target.checked); if (!e.target.checked) windParticles.setData(getWRFData(), Number($('timeSlider').value), false); else if (getSelectedField() === 'wind') windParticles.setData(getWRFData(), Number($('timeSlider').value), true); });
+$('stationsToggle').addEventListener('change', e => e.target.checked ? stationsLayer.addTo(map) : map.removeLayer(stationsLayer));
+
+function changeTime(delta) {
+  const slider = $('timeSlider');
+  const next = Math.max(0, Math.min(Number(slider.max), Number(slider.value) + delta));
+  slider.value = next; renderData(next);
+}
+$('prevTime').addEventListener('click', () => changeTime(-1));
+$('nextTime').addEventListener('click', () => changeTime(1));
+document.addEventListener('keydown', e => {
+  if (e.target?.tagName === 'INPUT' || e.target?.tagName === 'SELECT') return;
+  if (e.key === 'ArrowLeft') changeTime(-1);
+  if (e.key === 'ArrowRight') changeTime(1);
+});
+
+
+/* ===== GRID POINT AUTO-HOVER PANEL ===== */
+const gridHoverTip = $('gridHoverTip');
+const gridPointPanel = $('gridPointPanel');
+let activeGridPoint = null;
+let hoverFramePending = false;
+let pendingMouseEvent = null;
+
+/* Find the closest WRF grid node to the pointer, without a distance threshold.
+   The pointer can be anywhere inside the map: the nearest node is always selected. */
+function nearestGridPoint(containerPoint) {
+  const D = getWRFData();
+  if (!D || !Array.isArray(D.lats) || !Array.isArray(D.lons)) return null;
+  const rows = Math.min(D.lats.length, D.lons.length);
+  let best = null, bestD2 = Infinity;
+
+  for (let i = 0; i < rows; i++) {
+    const latRow = D.lats[i], lonRow = D.lons[i];
+    if (!Array.isArray(latRow) || !Array.isArray(lonRow)) continue;
+    const cols = Math.min(latRow.length, lonRow.length);
+    for (let j = 0; j < cols; j++) {
+      const lat = Number(latRow[j]), lon = Number(lonRow[j]);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+      const p = map.latLngToContainerPoint([lat, lon]);
+      const dx = p.x - containerPoint.x, dy = p.y - containerPoint.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        best = { i, j, lat, lon, distance: Math.sqrt(d2) };
+      }
+    }
+  }
+  return best;
+}
+
+function valueAtGrid(field, timeIndex, point) {
+  const row = field?.[timeIndex]?.[point.i];
+  const value = row?.[point.j];
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+function formatValue(value, digits = 1) {
+  return value === null || value === undefined ? '—' : value.toFixed(digits);
+}
+function getGridHeight(D, point) {
+  const candidates = ['HGT', 'HGT_M', 'terrain', 'elevation', 'orography'];
+  for (const key of candidates) {
+    const f = D[key];
+    if (Array.isArray(f)) {
+      let v = f[point.i]?.[point.j];
+      if (v === undefined && Array.isArray(f[0])) v = f[0]?.[point.i]?.[point.j];
+      const n = Number(v);
+      if (Number.isFinite(n)) return n;
+    }
+  }
+  return null;
+}
+function drawGridChart(point) {
+  const canvas = $('gpChart'), ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.round(rect.width * ratio));
+  canvas.height = Math.max(1, Math.round(150 * ratio));
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  const w = rect.width, h = 150, pad = {l:30, r:8, t:8, b:23};
+  ctx.clearRect(0, 0, w, h);
+  const D = getWRFData(), start = Number($('timeSlider').value) || 0;
+  const times = D?.times || [];
+  const endTime = Date.parse(times[start]) + 48 * 3600000;
+  let indices = [];
+  for (let k = start; k < times.length; k++) {
+    const t = Date.parse(times[k]);
+    if (k === start || !Number.isFinite(endTime) || !Number.isFinite(t) || t <= endTime) indices.push(k);
+    else break;
+  }
+  if (indices.length > 49) indices = indices.slice(0, 49);
+  const temps = indices.map(k => valueAtGrid(D.T2, k, point));
+  const rains = indices.map(k => valueAtGrid(D.RAIN, k, point));
+  const validT = temps.filter(v => v !== null);
+  const validR = rains.filter(v => v !== null);
+  if (!indices.length || !validT.length) {
+    ctx.fillStyle = '#9aabc0'; ctx.font = '12px Arial';
+    ctx.fillText('Δεν υπάρχουν διαθέσιμα δεδομένα γραφήματος.', 8, 28);
+    return;
+  }
+  const minT = Math.floor(Math.min(...validT) - 2), maxT = Math.ceil(Math.max(...validT) + 2);
+  const maxR = Math.max(1, ...validR);
+  const x = n => pad.l + n * (w - pad.l - pad.r) / Math.max(1, indices.length - 1);
+  const yT = v => pad.t + (maxT - v) * (h - pad.t - pad.b) / Math.max(1, maxT - minT);
+  const yR = v => h - pad.b - (v / maxR) * (h - pad.t - pad.b) * .48;
+  ctx.strokeStyle = 'rgba(148,163,184,.18)'; ctx.lineWidth = 1;
+  for (let q = 0; q < 4; q++) {
+    const yy = pad.t + q * (h - pad.t - pad.b) / 3;
+    ctx.beginPath(); ctx.moveTo(pad.l, yy); ctx.lineTo(w-pad.r, yy); ctx.stroke();
+  }
+  ctx.fillStyle = '#ffad72'; ctx.font = '10px Arial'; ctx.fillText(maxT + '°', 2, 12);
+  ctx.fillStyle = '#55bfff'; ctx.fillText('mm', 4, h - pad.b - 4);
+  const barW = Math.max(2, (w-pad.l-pad.r) / indices.length * .42);
+  rains.forEach((v, n) => {
+    if (v === null || v <= 0) return;
+    ctx.fillStyle = 'rgba(72,186,255,.7)';
+    const yy = yR(v); ctx.fillRect(x(n)-barW/2, yy, barW, h-pad.b-yy);
+  });
+  ctx.beginPath(); ctx.strokeStyle = '#ff9848'; ctx.lineWidth = 2.4;
+  let started = false;
+  temps.forEach((v, n) => {
+    if (v === null) { started = false; return; }
+    if (!started) { ctx.moveTo(x(n), yT(v)); started = true; }
+    else ctx.lineTo(x(n), yT(v));
+  });
+  ctx.stroke();
+  ctx.fillStyle = '#9aabc0'; ctx.font = '10px Arial';
+  const first = String(times[indices[0]] || '').replace('T',' ').slice(5,16);
+  const last = String(times[indices[indices.length-1]] || '').replace('T',' ').slice(5,16);
+  ctx.fillText(first, pad.l, h-5);
+  const tw = ctx.measureText(last).width; ctx.fillText(last, w-pad.r-tw, h-5);
+}
+function updateGridPanel() {
+  if (!activeGridPoint) return;
+  const D = getWRFData();
+  const index = Number($('timeSlider').value) || 0;
+  const temp = valueAtGrid(D?.T2, index, activeGridPoint);
+  const rain = valueAtGrid(D?.RAIN, index, activeGridPoint);
+  const u10 = valueAtGrid(D?.U10, index, activeGridPoint);
+  const v10 = valueAtGrid(D?.V10, index, activeGridPoint);
+  const windSpeed = u10 === null || v10 === null ? null : Math.hypot(u10, v10);
+  const windDir = windSpeed === null || windSpeed < 0.05 ? null :
+    ((Math.atan2(-u10, -v10) * 180 / Math.PI) + 360) % 360;
+  const windDirNames = ['Β','ΒΒΑ','ΒΑ','ΑΒΑ','Α','ΑΝΑ','ΝΑ','ΝΝΑ','Ν','ΝΝΔ','ΝΔ','ΔΝΔ','Δ','ΔΒΔ','ΒΔ','ΒΒΔ'];
+  const windDirGreek = windDir === null ? null : windDirNames[Math.round(windDir / 22.5) % 16];
+  const windSpeedKmh = windSpeed === null ? null : windSpeed * 3.6;
+  const height = getGridHeight(D || {}, activeGridPoint);
+  $('gpCoords').textContent = `${activeGridPoint.lat.toFixed(5)}°N, ${activeGridPoint.lon.toFixed(5)}°E`;
+  $('gpTemp').innerHTML = `${formatValue(temp)}<span class="gp-unit"> °C</span>`;
+  $('gpRain').innerHTML = `${formatValue(rain, 2)}<span class="gp-unit"> mm</span>`;
+  $('gpWind').innerHTML = windSpeedKmh === null ? '—' : `${windSpeedKmh.toFixed(1)}<span class="gp-unit"> km/h</span>`;
+  $('gpWindDir').textContent = windDirGreek === null ? 'Διεύθυνση —' : `Από ${windDirGreek}`;
+  $('gpHeight').innerHTML = height === null ? '—' : `${formatValue(height, 0)}<span class="gp-unit"> m</span>`;
+  $('gpTime').textContent = String(D?.times?.[index] || '--').replace('T', ' ');
+  $('gpIndex').textContent = `Χρονικό βήμα ${index + 1} / ${D?.times?.length || 0}`;
+  $('gpAvailability').textContent = 'Διαθέσιμα πεδία: T2, RAIN, U10 και V10. Η διεύθυνση υπολογίζεται ως μετεωρολογική διεύθυνση (από όπου φυσά).';
+  drawGridChart(activeGridPoint);
+}
+function openGridPanel(point) {
+  if (!point) return;
+  activeGridPoint = point;
+  gridPointPanel.classList.add('open');
+  gridHoverTip.style.display = 'none';
+  updateGridPanel();
+}
+$('gpClose').addEventListener('click', () => gridPointPanel.classList.remove('open'));
+
+/* Το πάνελ ανοίγει μόνο με κλικ. Επιλέγεται πάντα το κοντινότερο
+   grid point στη θέση του κλικ, χωρίς περιορισμό απόστασης. */
+map.on('click', e => {
+  const point = nearestGridPoint(e.containerPoint);
+  if (point) openGridPanel(point);
+});
+map.on('mouseout', () => { /* Δεν αλλάζει το επιλεγμένο σημείο. */ });
+/* ===== END GRID POINT AUTO-HOVER PANEL ===== */
+
+terrainOverlay.on('load', () => status('COP90 90 m: έγχρωμο ανάγλυφο φορτώθηκε.'));
+terrainOverlay.on('error', () => status('Δεν βρέθηκε το MAGNESIA_TERRAIN_SHADED.png δίπλα στο HTML.'));
+loadData();
+</script>
+</body>
+</html>
