@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WRF MAGNESIA 3,5 km | Viewer v29 OpenStreetMap Test</title>
+<title>WRF MAGNESIA 3,5 km | Viewer v33 Loading Progress</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root {
@@ -102,6 +102,20 @@ html, body, #map {
   font-size: 11px; color: var(--yellow); line-height: 1.4; word-break: break-all;
 }
 
+.loading-overlay {
+  position: absolute; z-index: 2200; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 18px; background: rgba(5, 12, 22, 0.48); backdrop-filter: blur(3px);
+}
+.loading-overlay.hidden { display: none; }
+.loading-card {
+  width: min(420px, calc(100vw - 36px)); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 14px; padding: 18px 20px; box-shadow: 0 12px 36px rgba(0,0,0,0.48);
+}
+.loading-title { color: var(--cyan); font-size: 14px; font-weight: 800; margin-bottom: 14px; }
+.loading-track { width: 100%; height: 10px; background: rgba(148,163,184,0.22); border-radius: 20px; overflow: hidden; }
+.loading-fill { width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#06b6d4,#38bdf8,#22c55e); transition: width .12s linear; }
+.loading-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; color: var(--muted); font-size: 11px; }
+.loading-meta strong { color: var(--yellow); font-size: 13px; font-variant-numeric: tabular-nums; }
 .bottom-time-bar {
   position: absolute; z-index: 1000; bottom: 18px; left: 50%; transform: translateX(-50%);
   width: min(720px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line);
@@ -119,6 +133,7 @@ html, body, #map {
 .time-info-row { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 8px; }
 .date-highlight { font-size: 17px; font-weight: bold; color: var(--yellow); }
 .step-badge { font-size: 11px; color: var(--muted); background: rgba(255,255,255,0.07); padding: 2px 8px; border-radius: 10px; }
+.cycle-badge { font-size: 10px; color: #8fa6bd; background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.18); padding: 2px 7px; border-radius: 9px; white-space: nowrap; }
 .ticks-bar {
   height: 6px; margin: 6px 46px 0;
   background-image: repeating-linear-gradient(to right, rgba(148, 163, 184, 0.45) 0px, rgba(148, 163, 184, 0.45) 1px, transparent 1px, transparent 14px);
@@ -340,7 +355,7 @@ html, body, #map {
     <div class="section-title">Επίπεδα Χάρτη</div>
     <label class="option-item"><input id="wrfToggle" type="checkbox" checked><span>Δεδομένα WRF</span></label>
     <label class="option-item"><input id="baseMapToggle" type="checkbox"><span>OpenStreetMap (δοκιμή)</span></label>
-    <label class="option-item"><input id="hillshadeToggle" type="checkbox"><span>Πρόσθετη σκίαση Esri</span></label>
+    <label class="option-item"><input id="hillshadeToggle" type="checkbox" checked><span>Τεχνική σκίαση αναγλύφου (Esri)</span></label>
     <label class="option-item"><input id="terrainToggle" type="checkbox" checked><span>Έγχρωμο ανάγλυφο COP90 (90 m)</span></label>
   </div>
   <div class="param-section">
@@ -349,6 +364,14 @@ html, body, #map {
   </div>
   <div class="status-box" id="status">Αναμονή φόρτωσης wrf_data.js...</div>
 </aside>
+
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-card">
+    <div class="loading-title">Φόρτωση προγνωστικών δεδομένων WRF</div>
+    <div class="loading-track"><div id="loadingProgressFill" class="loading-fill"></div></div>
+    <div class="loading-meta"><span id="loadingMessage">Σύνδεση με τον διακομιστή…</span><strong id="loadingPercent">0%</strong></div>
+  </div>
+</div>
 
 <div class="bottom-time-bar">
   <div class="slider-row">
@@ -361,6 +384,7 @@ html, body, #map {
   <div class="time-info-row">
     <span class="date-highlight" id="dateDisplay">Φόρτωση δεδομένων…</span>
     <span class="step-badge" id="timeLabel">-- / --</span>
+    <span class="cycle-badge" id="cycleLabel">Κύκλος --Z</span>
   </div>
   <div class="ticks-bar"></div>
 </div>
@@ -399,8 +423,10 @@ const terrainOverlay = L.imageOverlay('./MAGNESIA_TERRAIN_SHADED.png', cop90Boun
 }).addTo(map);
 
 const hill = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', {
-  maxZoom: 16, opacity: 0.22, attribution: 'Hillshade © Esri'
-});
+  maxZoom: 16,
+  opacity: 0.38,
+  attribution: 'Terrain hillshade © Esri'
+}).addTo(map);
 
 let wrfOverlay = null;
 const $ = id => document.getElementById(id);
@@ -470,7 +496,7 @@ class SmoothWRFOverlay {
       // Διαβαθμίσεις γκρι: πιο σκούρα στις αραιές νεφώσεις, φωτεινότερα λευκά στα πυκνά νέφη.
       ? [[20,[215,219,226]],[40,[179,186,197]],[60,[143,152,165]],[80,[95,103,115]],[100,[52,59,69]]]
       : this.type === 'temp'
-      ? [[-5,[67,35,112]],[0,[84,39,136]],[5,[44,127,184]],[10,[65,182,196]],[15,[161,218,180]],[20,[255,255,204]],[25,[254,217,118]],[30,[253,141,60]],[35,[240,59,32]],[40,[189,0,38]]]
+      ? [[-5,[49,54,149]],[0,[50,80,190]],[5,[30,144,255]],[10,[0,190,210]],[15,[80,200,120]],[20,[255,230,0]],[25,[255,165,0]],[30,[255,75,0]],[35,[220,20,60]],[40,[128,0,0]]]
       : this.type === 'wind'
         ? [[0,[226,232,240]],[2,[125,211,252]],[4,[56,189,248]],[6,[34,197,94]],[8,[250,204,21]],[10,[249,115,22]],[15,[220,38,38]],[20,[126,34,206]]]
         : [[0.1,[219,234,254]],[0.5,[147,197,253]],[1,[56,189,248]],[2.5,[34,197,94]],[5,[234,179,8]],[10,[249,115,22]],[20,[220,38,38]],[40,[126,34,206]]];
@@ -521,7 +547,7 @@ class SmoothWRFOverlay {
       : this.type === 'rain_total' ? getAccumulatedRain(this.data, this.index, rainHours) : field?.[this.index];
     if (this.type === 'wind') this.opacity = 0.58;
     else if (this.type === 'cloud') this.opacity = 0.78;
-    else this.opacity = 0.52;
+    else this.opacity = 0.60;
     const lat = this.data.lats;
     const lon = this.data.lons;
     
@@ -761,7 +787,7 @@ function setMagnesiaMode(active) {
 function updateLegend(type) {
   if (type === 'temp') {
     $('legendTitle').textContent = 'Θερμοκρασία 2 m (°C)';
-    $('legendScale').style.background = 'linear-gradient(90deg,#542788,#2c7fb8,#41b6c4,#a1dab4,#ffffcc,#fed976,#fd8d3c,#bd0026)';
+    $('legendScale').style.background = 'linear-gradient(90deg,#313695,#3250be,#1e90ff,#00bed2,#50c878,#ffe600,#ffa500,#ff4b00,#dc143c,#800000)';
     $('legendLabels').innerHTML = '<span>≤0</span><span>10</span><span>20</span><span>30</span><span>35+</span>';
   } else if (type === 'rain') {
     $('legendTitle').textContent = 'Υετός ανά ώρα (mm)';
@@ -779,6 +805,35 @@ function updateLegend(type) {
   }
 }
 
+// WRF valid times are UTC; display them in Greek local time (Europe/Athens).
+function parseWRFTime(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return null;
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw);
+  const d = new Date(hasZone ? raw : `${raw}Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+const athensDateTime = new Intl.DateTimeFormat('el-GR', {
+  timeZone: 'Europe/Athens', day: '2-digit', month: '2-digit', year: 'numeric',
+  hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+});
+const athensTime = new Intl.DateTimeFormat('el-GR', {
+  timeZone: 'Europe/Athens', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+});
+function updateTimeDisplay(index, D) {
+  const current = parseWRFTime(D.times[index]);
+  const first = parseWRFTime(D.times[0]);
+  const last = parseWRFTime(D.times[D.times.length - 1]);
+  $('dateDisplay').textContent = current
+    ? `${athensDateTime.format(current).replace(',', ' |')} (τοπική ώρα)`
+    : String(D.times[index] ?? '').replace('T', ' | ');
+  $('startTimeLabel').textContent = first ? athensTime.format(first) : '--:--';
+  $('endTimeLabel').textContent = last ? athensTime.format(last) : '--:--';
+  $('cycleLabel').textContent = first
+    ? `Κύκλος ${String(first.getUTCHours()).padStart(2, '0')}Z`
+    : 'Κύκλος --Z';
+}
+
 function renderData(index) {
   const D = getWRFData(); if (!D) return;
   if (!Array.isArray(D.times) || !D.times.length) return;
@@ -787,7 +842,7 @@ function renderData(index) {
     renderMagnesiaComposite(index);
     $('timeSlider').value = index;
     $('timeLabel').textContent = `Βήμα ${String(index + 1).padStart(2, '0')} / ${D.times.length}`;
-    $('dateDisplay').textContent = String(D.times[index] ?? '').replace('T', ' | ');
+    updateTimeDisplay(index, D);
     $('prevTime').disabled = index <= 0; $('nextTime').disabled = index >= D.times.length - 1;
     if (activeGridPoint && gridPointPanel.classList.contains('open')) updateGridPanel();
     return;
@@ -807,35 +862,94 @@ function renderData(index) {
   updateLegend(type);
   $('timeSlider').value = index;
   $('timeLabel').textContent = `Βήμα ${String(index + 1).padStart(2, '0')} / ${D.times.length}`;
-  $('dateDisplay').textContent = String(D.times[index] ?? '').replace('T', ' | ');
+  updateTimeDisplay(index, D);
   $('prevTime').disabled = index <= 0;
   $('nextTime').disabled = index >= D.times.length - 1;
 }
 
-function loadData() {
-  const s = document.createElement('script');
-  s.src = './wrf_data.js?v=' + Date.now();
-  s.onload = () => {
-    const D = getWRFData();
-    if (!D) { status('ΣΦΑΛΜΑ: Το wrf_data.js φορτώθηκε αλλά το WRF_DATA είναι άδειο.'); return; }
-    if (!Array.isArray(D.times) || !D.times.length) { status('ΣΦΑΛΜΑ: Δεν βρέθηκαν χρόνοι στο WRF_DATA.'); return; }
-    
-    // Διατηρούμε την αρχική εστίαση στη Μαγνησία· δεν κάνουμε fitBounds σε όλο το πλέγμα WRF.
+function setLoadingProgress(percent, message) {
+  const overlay = $('loadingOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  $('loadingProgressFill').style.width = `${Math.max(0, Math.min(100, percent))}%`;
+  $('loadingPercent').textContent = `${Math.round(percent)}%`;
+  $('loadingMessage').textContent = message;
+}
+function hideLoadingProgress() {
+  const overlay = $('loadingOverlay');
+  if (overlay) overlay.classList.add('hidden');
+}
 
-    $('timeSlider').max = D.times.length - 1;
-    $('timeSlider').value = 0;
-    $('timeSlider').disabled = false;
-    $('prevTime').disabled = false;
-    $('nextTime').disabled = false;
-    $('startTimeLabel').textContent = D.times[0].match(/(\d{2}:\d{2})/)?.[1] || '--:--';
-    $('endTimeLabel').textContent = D.times[D.times.length - 1].match(/(\d{2}:\d{2})/)?.[1] || '--:--';
-    
-    map.invalidateSize();
-    renderData(0);
-    status(`Επιτυχής φόρτωση WRF: ${D.times.length} χρονικά βήματα · ${D.CLOUD ? 'νεφοκάλυψη διαθέσιμη' : 'χωρίς CLOUD — απαιτείται το νεότερο wrf_data.js'}.`);
-  };
-  s.onerror = () => status('ΣΦΑΛΜΑ: Δεν βρέθηκε το αρχείο wrf_data.js στον φάκελο.');
-  document.head.appendChild(s);
+async function loadData() {
+  setLoadingProgress(0, 'Σύνδεση με τον διακομιστή…');
+  try {
+    // Χωρίς τυχαίο query string: επιτρέπουμε στον browser να αξιοποιεί την cache.
+    const response = await fetch('./wrf_data.js', { cache: 'default' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const total = Number(response.headers.get('Content-Length')) || 0;
+    const reader = response.body?.getReader();
+    let blob;
+    if (reader) {
+      const chunks = [];
+      let received = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.byteLength;
+        if (total > 0) {
+          const pct = Math.min(99, received / total * 100);
+          setLoadingProgress(pct, `Λήψη δεδομένων: ${(received / 1048576).toFixed(1)} / ${(total / 1048576).toFixed(1)} MB`);
+        } else {
+          setLoadingProgress(0, `Λήψη δεδομένων: ${(received / 1048576).toFixed(1)} MB`);
+        }
+      }
+      blob = new Blob(chunks, { type: 'text/javascript' });
+    } else {
+      setLoadingProgress(0, 'Λήψη δεδομένων…');
+      blob = await response.blob();
+    }
+
+    setLoadingProgress(100, 'Η λήψη ολοκληρώθηκε – επεξεργασία δεδομένων…');
+    const objectUrl = URL.createObjectURL(blob);
+    const script = document.createElement('script');
+    script.src = objectUrl;
+    script.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const D = getWRFData();
+      if (!D) {
+        setLoadingProgress(100, 'Σφάλμα: το WRF_DATA είναι άδειο.');
+        status('ΣΦΑΛΜΑ: Το wrf_data.js φορτώθηκε αλλά το WRF_DATA είναι άδειο.');
+        return;
+      }
+      if (!Array.isArray(D.times) || !D.times.length) {
+        setLoadingProgress(100, 'Σφάλμα: δεν βρέθηκαν χρονικά βήματα.');
+        status('ΣΦΑΛΜΑ: Δεν βρέθηκαν χρόνοι στο WRF_DATA.');
+        return;
+      }
+
+      $('timeSlider').max = D.times.length - 1;
+      $('timeSlider').value = 0;
+      $('timeSlider').disabled = false;
+      $('prevTime').disabled = false;
+      $('nextTime').disabled = false;
+      updateTimeDisplay(0, D);
+      map.invalidateSize();
+      renderData(0);
+      status(`Επιτυχής φόρτωση WRF: ${D.times.length} χρονικά βήματα · ${D.CLOUD ? 'νεφοκάλυψη διαθέσιμη' : 'χωρίς CLOUD — απαιτείται το νεότερο wrf_data.js'}.`);
+      setLoadingProgress(100, 'Έτοιμο – ο χάρτης είναι διαθέσιμος.');
+      window.setTimeout(hideLoadingProgress, 650);
+    };
+    script.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      setLoadingProgress(100, 'Σφάλμα κατά την επεξεργασία του αρχείου.');
+      status('ΣΦΑΛΜΑ: Αδυναμία εκτέλεσης του wrf_data.js.');
+    };
+    document.head.appendChild(script);
+  } catch (error) {
+    setLoadingProgress(0, `Αποτυχία φόρτωσης: ${error.message}`);
+    status(`ΣΦΑΛΜΑ φόρτωσης WRF: ${error.message}`);
+  }
 }
 
 function toggleDrawer(forceState) {
