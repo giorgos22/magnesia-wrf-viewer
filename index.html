@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WRF MAGNESIA 3,5 km | Experimental Viewer v16</title>
+<title>WRF MAGNESIA 3,5 km | Viewer v29 OpenStreetMap Test</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root {
@@ -339,6 +339,7 @@ html, body, #map {
   <div class="param-section">
     <div class="section-title">Επίπεδα Χάρτη</div>
     <label class="option-item"><input id="wrfToggle" type="checkbox" checked><span>Δεδομένα WRF</span></label>
+    <label class="option-item"><input id="baseMapToggle" type="checkbox"><span>OpenStreetMap (δοκιμή)</span></label>
     <label class="option-item"><input id="hillshadeToggle" type="checkbox"><span>Πρόσθετη σκίαση Esri</span></label>
     <label class="option-item"><input id="terrainToggle" type="checkbox" checked><span>Έγχρωμο ανάγλυφο COP90 (90 m)</span></label>
   </div>
@@ -374,7 +375,14 @@ const topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/W
   maxZoom: 19, attribution: 'Tiles © Esri'
 }).addTo(map);
 
-// COP90 terrain image: place above the Esri basemap and below WRF canvas.
+// OpenStreetMap δοκιμαστικό υπόβαθρο. Εναλλάσσεται με το Esri Topographic.
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  subdomains: 'abc',
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>'
+});
+
+// COP90 terrain image: place above the basemap and below WRF canvas.
 map.createPane('cop90TerrainPane');
 map.getPane('cop90TerrainPane').style.zIndex = 350;
 map.getPane('cop90TerrainPane').style.pointerEvents = 'none';
@@ -859,6 +867,15 @@ document.querySelectorAll('input[name="wrfField"]').forEach(radio => {
 });
 $('rainPeriod').addEventListener('change', () => {
   if (getSelectedField() === 'rain_total') renderData(Number($('timeSlider').value));
+});
+$('baseMapToggle').addEventListener('change', e => {
+  if (e.target.checked) {
+    if (map.hasLayer(topo)) map.removeLayer(topo);
+    if (!map.hasLayer(osm)) osm.addTo(map);
+  } else {
+    if (map.hasLayer(osm)) map.removeLayer(osm);
+    if (!map.hasLayer(topo)) topo.addTo(map);
+  }
 });
 $('hillshadeToggle').addEventListener('change', e => e.target.checked ? hill.addTo(map) : map.removeLayer(hill));
 $('terrainToggle').addEventListener('change', e => e.target.checked ? terrainOverlay.addTo(map) : map.removeLayer(terrainOverlay));
