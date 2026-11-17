@@ -413,6 +413,7 @@ html, body, #map {
     <label class="option-item"><input id="wrfToggle" type="checkbox" checked><span>Δεδομένα WRF</span></label>
     <label class="option-item"><input id="baseMapToggle" type="checkbox" checked><span>OpenStreetMap</span></label>
     <label class="option-item"><input id="hillshadeToggle" type="checkbox" checked><span>Τεχνική σκίαση αναγλύφου (Esri)</span></label>
+    <label class="option-item"><input id="geoReferenceToggle" type="checkbox" checked><span>Ακτογραμμές και ονόματα τοπωνυμίων</span></label>
   </div>
   <div class="param-section">
     <div class="section-title">Σταθμοί</div>
@@ -485,6 +486,15 @@ const hill = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/E
   maxZoom: 16,
   opacity: 0.38,
   attribution: 'Terrain hillshade © Esri'
+}).addTo(map);
+
+// Γεωγραφική αναφορά πάνω από τα WRF πεδία: ακτογραμμές, όρια και ονόματα τόπων.
+map.createPane('geoReferencePane');
+map.getPane('geoReferencePane').style.zIndex = 690;
+map.getPane('geoReferencePane').style.pointerEvents = 'none';
+const geoReference = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+  pane: 'geoReferencePane', maxZoom: 19, opacity: 0.95,
+  attribution: 'Geographic reference © Esri'
 }).addTo(map);
 
 let wrfOverlay = null;
@@ -611,9 +621,9 @@ class SmoothWRFOverlay {
     const vals = this.type === 'wind'
       ? (this.data.U10?.[this.index] || []).map((row, i) => row.map((u, j) => Math.hypot(Number(u), Number(this.data.V10?.[this.index]?.[i]?.[j])) * 3.6))
       : this.type === 'rain_total' ? getAccumulatedRain(this.data, this.index, rainHours) : field?.[this.index];
-    if (this.type === 'wind') this.opacity = 0.58;
-    else if (this.type === 'cloud') this.opacity = 0.78;
-    else this.opacity = 0.60;
+    if (this.type === 'wind') this.opacity = 0.44;
+    else if (this.type === 'cloud') this.opacity = 0.52;
+    else this.opacity = 0.44;
     const lat = this.data.lats;
     const lon = this.data.lons;
     
@@ -799,7 +809,6 @@ cloudOverlay.canvas.style.mixBlendMode = 'multiply';
 wrfOverlay.canvas.style.zIndex = '652';
 wrfOverlay.canvas.style.mixBlendMode = 'normal';
 let magnesiaModeActive = false;
-let magnesiaPreviousState = null;
 function renderMagnesiaComposite(index) {
   const D = getWRFData(); if (!D) return;
   const rainField = D.RAIN_HOURLY || D.RAIN;
@@ -827,29 +836,14 @@ function renderMagnesiaComposite(index) {
   status('Συνδυαστική προβολή Μαγνησίας: νεφοκάλυψη + ωριαίος υετός.');
 }
 function setMagnesiaMode(active) {
-  const nextState = !!active;
-  if (nextState === magnesiaModeActive) return;
-  magnesiaModeActive = nextState;
+  magnesiaModeActive = !!active;
   const btn = $('magnesiaModeToggle');
   btn.classList.toggle('active', magnesiaModeActive);
   btn.setAttribute('aria-pressed', String(magnesiaModeActive));
-
   if (magnesiaModeActive) {
-    // Αποθήκευση της πραγματικής κατάστασης πριν από την ειδική προβολή.
-    magnesiaPreviousState = {
-      center: map.getCenter(),
-      zoom: map.getZoom(),
-      minZoom: map.getMinZoom(),
-      maxZoom: map.getMaxZoom(),
-      maxBounds: map.options.maxBounds || null,
-      maxBoundsViscosity: map.options.maxBoundsViscosity || 0,
-      wrfVisible: wrfOverlay.visible,
-      cloudVisible: cloudOverlay.visible
-    };
-
-    map.setMaxBounds(MAGNESIA_BOUNDS.pad(0.015));
-    map.options.maxBoundsViscosity = 1.0;
+    map.setMaxBounds(MAGNESIA_BOUNDS.pad(0.015)); map.options.maxBoundsViscosity = 1.0;
     map.setMaxZoom(14);
+    // Πιο κοντινή αρχική εστίαση στη Μαγνησία, περίπου ένα επίπεδο zoom πάνω από το fitBounds.
     map.fitBounds(MAGNESIA_BOUNDS, {padding:[12,12], animate:false});
     const magnesiaTargetZoom = Math.min(map.getZoom() + 1.0, 13.5);
     map.setMinZoom(magnesiaTargetZoom - 0.5);
@@ -857,34 +851,16 @@ function setMagnesiaMode(active) {
     $('paramsDrawer').classList.remove('open'); $('drawerToggle').classList.remove('open');
     renderMagnesiaComposite(Number($('timeSlider').value) || 0);
   } else {
-    const previous = magnesiaPreviousState;
-    map.setMaxBounds(previous?.maxBounds || null);
-    map.options.maxBoundsViscosity = previous?.maxBoundsViscosity || 0;
-    map.setMinZoom(previous?.minZoom ?? 0);
-    map.setMaxZoom(previous?.maxZoom ?? 13);
+    map.setMaxBounds(null); map.options.maxBoundsViscosity = 0;
+    map.setMinZoom(0); map.setMaxZoom(13);
     cloudOverlay.setVisible(false);
-
-    // Επαναφορά στο ακριβές κέντρο/zoom που είχε ο χάρτης πριν από το πάτημα.
-    if (previous) map.setView(previous.center, previous.zoom, {animate:true});
-    else map.setView(DEFAULT_VIEW.center, DEFAULT_VIEW.zoom, {animate:true});
-
-    // Η κανονική απόδοση επαναφέρει το αρχικό πεδίο και το δικό του υπόμνημα.
-    const cloudLegend = $('cloudLegend');
-    if (cloudLegend) cloudLegend.remove();
+    map.setView(DEFAULT_VIEW.center, DEFAULT_VIEW.zoom, {animate:true});
     renderData(Number($('timeSlider').value) || 0);
-    if (previous) {
-      wrfOverlay.setVisible(previous.wrfVisible);
-      cloudOverlay.setVisible(previous.cloudVisible);
-    }
-    magnesiaPreviousState = null;
   }
   setTimeout(() => map.invalidateSize(), 250);
 }
 
 function updateLegend(type) {
-  // Το πρόσθετο υπόμνημα νεφοκάλυψης ανήκει μόνο στη συνδυαστική λειτουργία Μαγνησίας.
-  const cloudLegend = $('cloudLegend');
-  if (cloudLegend) cloudLegend.remove();
   if (type === 'temp') {
     $('legendTitle').textContent = 'Θερμοκρασία 2 m (°C)';
     $('legendScale').style.background = 'linear-gradient(90deg,#313695,#3250be,#1e90ff,#00bed2,#50c878,#ffe600,#ffa500,#ff4b00,#dc143c,#800000)';
@@ -1092,6 +1068,7 @@ $('baseMapToggle').addEventListener('change', e => {
   }
 });
 $('hillshadeToggle').addEventListener('change', e => e.target.checked ? hill.addTo(map) : map.removeLayer(hill));
+$('geoReferenceToggle').addEventListener('change', e => e.target.checked ? geoReference.addTo(map) : map.removeLayer(geoReference));
 $('wrfToggle').addEventListener('change', e => { wrfOverlay.setVisible(e.target.checked); if (!e.target.checked) windParticles.setData(getWRFData(), Number($('timeSlider').value), false); else if (getSelectedField() === 'wind') windParticles.setData(getWRFData(), Number($('timeSlider').value), true); });
 $('stationsToggle').addEventListener('change', e => e.target.checked ? stationsLayer.addTo(map) : map.removeLayer(stationsLayer));
 
