@@ -326,6 +326,42 @@ html, body, #map {
 .meteogram-menu-icon{font-size:18px;color:#43dcff;line-height:1}
 .meteogram-menu-arrow{margin-left:auto;font-size:22px;color:#43dcff;line-height:1}
 
+
+/* v48: responsive parameter drawer sits above map legend on all phone sizes */
+#map .params-drawer {
+  z-index: 1400 !important;
+  max-height: calc(100dvh - 82px);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+#map .params-drawer.open {
+  z-index: 1400 !important;
+  top: 58px;
+  right: 14px;
+  max-height: calc(100dvh - 82px);
+}
+#map.drawer-menu-open .legend {
+  display: none !important;
+}
+@media (max-width: 600px) {
+  #map .params-drawer {
+    width: min(340px, calc(100vw - 28px));
+    max-height: calc(100dvh - 76px);
+    padding: 14px;
+  }
+  #map .params-drawer.open {
+    top: 58px;
+    right: 14px;
+    max-height: calc(100dvh - 76px);
+  }
+}
+@media (max-height: 760px) {
+  #map .params-drawer,
+  #map .params-drawer.open {
+    max-height: calc(100dvh - 70px);
+  }
+}
+
 </style>
 </head>
 <body>
@@ -436,7 +472,7 @@ html, body, #map {
   </div>
   <div class="param-section">
     <div class="section-title">Εργαλεία πρόγνωσης</div>
-    <a id="meteogramOpen" class="option-item meteogram-menu-link" href="./meteogram.html">
+    <a id="meteogramOpen" class="option-item meteogram-menu-link" href="./meteogram_kofoi_WRF_FINAL_v13.html">
       <span class="meteogram-menu-icon" aria-hidden="true">▥</span>
       <span>Μετεωγράμματα</span>
       <span class="meteogram-menu-arrow" aria-hidden="true">›</span>
@@ -871,7 +907,7 @@ function setMagnesiaMode(active) {
     const magnesiaTargetZoom = Math.min(map.getZoom() + 1.0, 13.5);
     map.setMinZoom(magnesiaTargetZoom - 0.5);
     map.setZoom(magnesiaTargetZoom, {animate:true});
-    $('paramsDrawer').classList.remove('open'); $('drawerToggle').classList.remove('open');
+    $('paramsDrawer').classList.remove('open'); $('drawerToggle').classList.remove('open'); $('magnesiaModeToggle').classList.remove('open-shift'); $('map').classList.remove('drawer-menu-open');
     renderMagnesiaComposite(Number($('timeSlider').value) || 0);
   } else {
     map.setMaxBounds(null); map.options.maxBoundsViscosity = 0;
@@ -1054,11 +1090,11 @@ async function loadData() {
 function toggleDrawer(forceState) {
   const drawer = $('paramsDrawer');
   const btn = $('drawerToggle');
-  $('magnesiaModeToggle').classList.toggle('open-shift', forceState === true || (forceState !== false && !drawer.classList.contains('open')));
   const isOpen = typeof forceState === 'boolean' ? forceState : !drawer.classList.contains('open');
   drawer.classList.toggle('open', isOpen);
   btn.classList.toggle('open', isOpen);
   $('magnesiaModeToggle').classList.toggle('open-shift', isOpen);
+  $('map').classList.toggle('drawer-menu-open', isOpen);
 }
 
 const infoModal = $('infoModal');
