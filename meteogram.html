@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="el"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1422"><script src="./wrf_data.js"></script><title>MAGNESIA METEOGRAM — Κωφοί Μαγνησίας</title>
+<style>
+:root{color-scheme:dark;--bg:#08111d;--panel:#111e2e;--line:#2a4058;--cyan:#18c9ef;--gold:#ffd84d;--muted:#9eb0c5;--text:#edf5ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#173b5d,#08111d 55%);color:var(--text);font-family:system-ui,Arial,sans-serif}.wrap{max-width:1250px;margin:auto;padding:18px}header{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:10px 2px 20px}.brand{display:flex;align-items:center;gap:13px}.logo{width:48px;height:48px;border:1px solid #287eaa;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#123c5a,#101b2b);color:#53dcff;font-size:25px}h1{font-size:clamp(21px,4vw,32px);line-height:1.1;margin:0}.sub{color:var(--muted);font-size:13px;margin-top:5px}.actions{display:flex;gap:8px;flex-wrap:wrap}button,.file-label{border:1px solid #31516e;background:#172b41;color:#eaf7ff;border-radius:10px;padding:10px 13px;font-weight:650;cursor:pointer}.status{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:11px 14px;background:#102338;border:1px solid #24425e;border-radius:12px;color:#c5d8eb;font-size:13px}.dot{width:8px;height:8px;border-radius:50%;background:#ffbf47}.status strong{color:var(--gold)}.weather-now{display:flex;align-items:center;gap:16px;padding:14px 18px;margin:0 0 14px;background:linear-gradient(110deg,#173653,#112235);border:1px solid #31516e;border-radius:15px}.wx-icon{font-size:48px;line-height:1;min-width:58px;text-align:center}.wx-main{font-size:18px;font-weight:800}.wx-detail{font-size:12px;color:#b8cce0;margin-top:4px}.wind-alert{margin-left:auto;text-align:center;min-width:90px;padding:8px 12px;border-radius:12px;background:#203b50;border:1px solid #42627e}.wind-alert .sock{font-size:31px;line-height:1.1}.wind-alert strong{display:block;font-size:12px}.wind-alert small{color:#c4d5e5;font-size:11px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.metric,.panel{background:linear-gradient(145deg,#16273b,#0d1928);border:1px solid var(--line);border-radius:15px;box-shadow:0 10px 30px #0003}.metric{padding:14px}.metric .k{font-size:12px;color:var(--muted)}.metric .v{font-size:25px;font-weight:800;margin-top:4px}.metric .u{font-size:12px;color:#b6c9dc}.grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.panel{padding:14px;min-width:0}.panel h2{font-size:15px;margin:0 0 3px;color:#5cdbfa}.panel p{font-size:12px;color:var(--muted);margin:0 0 10px}canvas{width:100%;height:210px;display:block}.weather-now{display:flex;align-items:center;gap:14px;padding:14px 16px;margin:14px 0;background:linear-gradient(110deg,#173653,#112235);border:1px solid #31516e;border-radius:15px;min-width:0}.wx-icon{font-size:43px;line-height:1;min-width:50px;text-align:center}.wx-copy{min-width:0;flex:1}.wx-main{font-size:16px;font-weight:800}.wx-detail{font-size:12px;color:#b8cce0;margin-top:4px}.wind-alert{flex:0 0 auto;text-align:center;min-width:80px;padding:7px 9px;border-radius:11px;background:#203b50;border:1px solid #42627e}.wind-alert .sock{font-size:27px;line-height:1.1}.wind-alert strong{display:block;font-size:11px}.wind-alert small{color:#c4d5e5;font-size:10px}@media(max-width:390px){.weather-now{gap:8px;padding:10px}.wx-icon{font-size:34px;min-width:38px}.wx-main{font-size:14px}.wind-alert{min-width:68px;padding:6px}}.wide{grid-column:1/-1}.controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0}.controls label{font-size:13px;color:#c5d8eb}select,input[type=range]{accent-color:#12c7ef}select{background:#172b41;color:white;border:1px solid #31516e;border-radius:9px;padding:9px}input[type=range]{flex:1;min-width:150px}.time{font-weight:800;color:var(--gold);min-width:145px}footer{color:#8095ac;text-align:center;font-size:11px;padding:22px 4px 10px}input[type=file]{display:none}@media(max-width:760px){.wrap{padding:11px}.metrics{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.panel{padding:11px}canvas{height:190px}.metric .v{font-size:22px}}
+
+.summary-backdrop{display:none;position:fixed;inset:0;z-index:1000;background:#020813c9;backdrop-filter:blur(5px);padding:14px;align-items:center;justify-content:center}
+.summary-backdrop.open{display:flex}.summary-modal{width:min(920px,100%);max-height:92vh;overflow:auto;background:linear-gradient(145deg,#13263b,#091522);border:1px solid #3b5874;border-radius:18px;padding:17px;box-shadow:0 24px 80px #0009}
+.summary-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:15px}.summary-kicker{font-size:10px;letter-spacing:1.2px;color:#6edcf5;font-weight:800}.summary-head h2{font-size:21px;margin:3px 0 0;color:#f2f7ff}.summary-close{padding:7px 11px;font-size:18px;line-height:1;border-radius:10px}
+.summary-days{display:grid;grid-template-columns:1fr 1fr;gap:12px}.summary-day{background:#f8fafc;color:#1b2939;border-radius:13px;padding:13px;border:1px solid #cbd5e1;min-width:0}
+.summary-day-top{display:flex;align-items:center;gap:12px;border-bottom:1px solid #d7dee7;padding-bottom:9px;margin-bottom:10px}.summary-date{font-size:38px;line-height:1;font-weight:850;color:#444}.summary-weekday{font-size:13px;font-weight:800;text-transform:uppercase}.summary-month{font-size:10px;color:#758294;font-weight:700}.summary-condition{margin-left:auto;font-size:32px}.summary-day-desc{font-size:12px;color:#59687a;margin-bottom:10px}
+.summary-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.summary-stat{background:#edf2f7;border-radius:9px;padding:8px}.summary-stat span{display:block;font-size:10px;color:#637184}.summary-stat strong{font-size:19px;color:#182d4b}.summary-stat.tempmax strong{color:#dc2626}.summary-stat.tempmin strong{color:#244d91}
+
+.model-info{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 13px}.model-info-item{background:#1b344b;border:1px solid #35536e;border-radius:10px;padding:9px 11px;min-width:0}.model-info-item span{display:block;color:#a9c2d8;font-size:10px;margin-bottom:3px}.model-info-item strong{display:block;color:#f0f7ff;font-size:13px;overflow-wrap:anywhere}.summary-stat.wind-strong strong{color:#b45309}.wind-note{font-size:11px;color:#9a5a09;font-weight:800;margin-top:7px}.wind-dir{font-size:11px;color:#536579;margin-top:4px}
+.summary-chart-wrap{margin-top:14px;background:#f8fafc;border-radius:13px;padding:12px;color:#1b2939}.summary-chart-title{font-size:13px;font-weight:800;margin-bottom:8px}.summary-timeline{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;overflow:hidden}.summary-slot{text-align:center;border-left:1px solid #e2e8f0;padding:2px 1px;min-width:0}.summary-slot .slot-time{font-size:10px;color:#64748b}.summary-slot .slot-icon{font-size:20px;line-height:1.5}.summary-slot .slot-temp{font-size:12px;font-weight:800;color:#1e3a5f}.summary-temp-svg{width:100%;height:105px;display:block;margin:5px 0}.summary-temp-svg text{font:10px system-ui;fill:#64748b}.summary-foot{font-size:10px;color:#9fb2c7;margin-top:10px}
+@media(max-width:600px){.summary-backdrop{padding:7px}.summary-modal{padding:12px;max-height:94vh}.summary-head h2{font-size:17px}.summary-days{grid-template-columns:1fr}.model-info{grid-template-columns:1fr}.summary-day{padding:10px}.summary-date{font-size:33px}.summary-timeline{grid-template-columns:repeat(8,minmax(0,1fr));gap:1px}.summary-slot .slot-icon{font-size:17px}.summary-slot .slot-time{font-size:9px}.summary-slot .slot-temp{font-size:11px}}
+
+.selected-place{font-size:12px;color:#b9cde0;padding:5px 2px}
+.regions-backdrop{display:none;position:fixed;inset:0;z-index:1100;background:#020813d9;backdrop-filter:blur(5px);padding:12px;align-items:center;justify-content:center}
+.regions-backdrop.open{display:flex}.regions-modal{width:min(720px,100%);max-height:92vh;overflow:auto;background:linear-gradient(145deg,#13263b,#091522);border:1px solid #3b5874;border-radius:18px;padding:16px;box-shadow:0 24px 80px #0009}
+.regions-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.region-choice{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;padding:12px;background:#1b344b;border:1px solid #35536e;border-radius:10px;color:#eef7ff}.region-choice small{display:block;color:#a9c2d8;font-size:10px;margin-top:3px}.region-choice.active{border-color:#25c9ef;background:#16415b}.region-choice .check{color:#55ddff;font-size:18px}
+@media(max-width:420px){.regions-grid{grid-template-columns:1fr}.regions-modal{padding:12px}.actions{width:100%}.actions button{flex:1}}
+
+.main-region{display:inline-block;margin-top:7px;padding:5px 10px;border-radius:8px;background:linear-gradient(90deg,#16415e,#12314a);border:1px solid #287da4;color:#70e1ff;font-size:16px;font-weight:850;letter-spacing:.2px;box-shadow:0 3px 12px #0003}
+.sub{margin-top:5px}
+.selected-place{display:flex;flex-direction:column;gap:2px;padding:7px 12px;border:1px solid #287da4;border-radius:10px;background:#12314a;min-width:180px}
+.selected-place .place-caption{font-size:9px;letter-spacing:1px;color:#81b7d0;font-weight:800}
+.selected-place strong{font-size:15px;color:#70e1ff;font-weight:850}
+.summary-region-name{font-size:20px;font-weight:900;color:#75e2ff;line-height:1.2;margin:3px 0 5px;text-shadow:0 2px 12px #0005}
+.summary-head h2{margin-top:2px}
+@media(max-width:420px){.main-region{font-size:15px}.selected-place{min-width:145px}.selected-place strong{font-size:14px}.summary-region-name{font-size:18px}}
+
+.sync-now{padding:8px 11px;border-color:#2686ad;background:#123b56;color:#75e2ff;font-size:12px;white-space:nowrap}
+.sync-status{font-size:10px;color:#8fb0c9;min-width:125px}
+@media(max-width:520px){.controls{gap:8px}.controls input[type=range]{order:5;flex:1 1 100%;min-width:100%}.sync-now{margin-left:auto}.sync-status{flex-basis:100%;text-align:right}}
+
+.rain-cloud-chart{height:270px!important;min-height:270px}
+.chart-legend{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:9px;color:#9fb4c9;font-size:11px}
+.chart-legend span{display:inline-flex;align-items:center;gap:5px}
+.chart-legend i{display:inline-block;width:18px;height:8px;border-radius:2px}
+.legend-rain{background:#9b8be8}.legend-cloud{background:#858b92;box-shadow:0 0 5px #aeb3ba}
+.chart-legend .cloud-source{display:block;flex-basis:100%;font-size:10px;color:#8198ad}
+
+.back-home{box-sizing:border-box;text-decoration:none;font-size:29px;font-weight:800;line-height:1;transition:background .15s,border-color .15s}
+.back-home:hover,.back-home:focus{background:linear-gradient(145deg,#185477,#142b42);border-color:#55dcff;color:#fff;outline:none}
+</style></head><body><div class="wrap">
+<header><div class="brand"><a class="logo back-home" href="./index.html" aria-label="Επιστροφή στην αρχική σελίδα χάρτη" title="Επιστροφή στην αρχική σελίδα">←</a><div><h1>MAGNESIA METEOGRAM</h1><div class="main-region" id="mainRegionName">Κωφοί Μαγνησίας</div><div class="sub">Model Tsiantos · WRF-ARW</div></div></div><div class="actions"><button id="summaryBtn">▦ Συνοπτική πρόγνωση 48ώρου</button><button id="regionsBtn">⌖ Περιοχές</button></div></header>
+<div class="regions-backdrop" id="regionsBackdrop" aria-hidden="true">
+ <section class="regions-modal" role="dialog" aria-modal="true" aria-labelledby="regionsTitle">
+  <div class="summary-head"><div><div class="summary-kicker">WRF-ARW · ΜΑΓΝΗΣΙΑ & ΘΕΣΣΑΛΙΑ</div><h2 id="regionsTitle">Επιλογή περιοχής</h2></div><button class="summary-close" id="regionsClose" aria-label="Κλείσιμο">✕</button></div>
+  <div class="regions-grid" id="regionsGrid"></div>
+  <div class="summary-foot">Οι τιμές υπολογίζονται από το πλησιέστερο διαθέσιμο κελί του πλέγματος WRF.</div>
+ </section>
+</div>
+<div class="summary-backdrop" id="summaryBackdrop" aria-hidden="true">
+ <section class="summary-modal" role="dialog" aria-modal="true" aria-labelledby="summaryTitle">
+  <div class="summary-head"><div><div class="summary-kicker">ΠΕΡΙΟΧΗ ΠΡΟΓΝΩΣΗΣ</div><div class="summary-region-name" id="summaryRegionName">Κωφοί Μαγνησίας</div><h2 id="summaryTitle">Συνοπτική πρόγνωση 48ώρου</h2></div><button class="summary-close" id="summaryClose" aria-label="Κλείσιμο">✕</button></div>
+  <div class="model-info" id="modelInfo"></div>
+  <div class="summary-days" id="summaryDays"></div>
+  <div class="summary-chart-wrap"><div class="summary-chart-title">Εξέλιξη θερμοκρασίας και καιρού ανά 3 ώρες</div><div id="summaryTimeline"></div></div>
+  <div class="summary-foot">Σύνολα υετού και μέγιστες τιμές υπολογίζονται από τα ωριαία πεδία WRF.</div>
+ </section>
+</div>
+<div class="status"><span class="dot"></span><span id="statusText"><strong>Φόρτωση πραγματικών δεδομένων WRF…</strong> · Περιμένετε να ολοκληρωθεί η ανάγνωση του wrf_data.js.</span></div>
+<section class="metrics"><div class="metric"><div class="k">Θερμοκρασία 2 m</div><div class="v" id="mTemp">—</div><div class="u">°C</div></div><div class="metric"><div class="k">Άνεμος 10 m</div><div class="v" id="mWind">—</div><div class="u">km/h</div></div><div class="metric"><div class="k">Σχετική υγρασία</div><div class="v" id="mRh">—</div><div class="u">%</div></div><div class="metric"><div class="k">Υετός στο βήμα</div><div class="v" id="mRain">—</div><div class="u">mm</div></div></section>
+<section class="weather-now" id="weatherNow">
+ <div class="wx-icon" id="wxIcon">🌤️</div>
+ <div class="wx-copy"><div class="wx-main" id="wxText">Υπολογισμός καιρού…</div>
+ <div class="wx-detail" id="wxDetail">Συνθήκες από τα πραγματικά δεδομένα WRF</div></div>
+ <div class="wind-alert" id="windAlert" style="display:none"><div class="sock">🚩</div><strong>Ισχυρός άνεμος</strong><small id="windAlertValue">— km/h</small></div>
+</section>
+<div class="controls"><span class="selected-place" id="selectedPlaceLabel"><span class="place-caption">ΠΕΡΙΟΧΗ ΠΡΟΓΝΩΣΗΣ</span><strong>Κωφοί Μαγνησίας</strong></span><label for="timeRange">Χρονική εξέλιξη:</label><input id="timeRange" type="range" min="0" max="47" value="0"><span class="time" id="timeLabel">—</span><button type="button" id="syncNowBtn" class="sync-now">⏱ Τώρα</button><span id="syncStatus" class="sync-status">Αυτόματος συγχρονισμός</span></div>
+<div class="grid"><section class="panel wide"><h2>Θερμοκρασία & αίσθηση καιρού</h2><p>Θερμοκρασία 2 m (°C)</p><canvas id="tempChart"></canvas></section><section class="panel"><h2>Άνεμος στα 10 m</h2><p>Ταχύτητα (km/h)</p><canvas id="windChart"></canvas></section><section class="panel wide"><h2>Υετός & κατακόρυφη νέφωση</h2><p>Υετός (mm/h) · κατανομή νεφών καθ’ ύψος (km)</p><canvas id="rainCloudChart" class="rain-cloud-chart"></canvas><div class="chart-legend"><span><i class="legend-rain"></i> Ωριαίος υετός</span><span><i class="legend-cloud"></i> Νέφη WRF: λευκά/διαφανή υψηλά · ανοιχτά γκρι μεσαία · γκρι χαμηλά · σκούρα με υετό</span><span class="cloud-source">Συνεχής απεικόνιση από τα 34 κατακόρυφα επίπεδα WRF, με παρεμβολή και εξομάλυνση</span></div></section></div>
+<footer>MAGNESIA WRF · Πειραματική έκδοση · Οι διευθύνσεις ανέμου είναι μέση επικρατούσα διεύθυνση. Τα σύμβολα νύχτας αλλάζουν αυτόματα με την ώρα. Καταιγίδα και ομίχλη είναι εκτιμήσεις από τα πεδία WRF.</footer></div>
+<script>
+const $=id=>document.getElementById(id);
+let data=null;
+const REGIONS=[
+ {name:'Κωφοί Μαγνησίας',lat:39.10677,lon:22.70801},
+ {name:'Όθρυς (1200 μ.)',lat:39.07529,lon:22.70807},
+ {name:'Ανάβρα',lat:39.07499,lon:22.54587},
+ {name:'Βρύναινα Μαγνησίας',lat:39.07538,lon:22.82974},
+ {name:'Αλμυρός',lat:39.16978,lon:22.74850},
+ {name:'Σούρπη',lat:39.10684,lon:22.91086},
+ {name:'Αμαλιάπολη',lat:39.16982,lon:22.87030},
+ {name:'Πτελεός',lat:39.04386,lon:22.95135},
+ {name:'Βελεστίνο',lat:39.39014,lon:22.74817},
+ {name:'Νέα Αγχίαλος',lat:39.29574,lon:22.82968},
+ {name:'Βόλος',lat:39.35867,lon:22.95178},
+ {name:'Πορταριά',lat:39.39009,lon:22.99258},
+ {name:'Μακρινίτσα',lat:39.39009,lon:22.99258},
+ {name:'Χάνια Πηλίου',lat:39.38997,lon:23.07404},
+ {name:'Ζαγορά',lat:39.45285,lon:23.11502},
+ {name:'Αργαλαστή',lat:39.23215,lon:23.23611},
+ {name:'Μηλίνα',lat:39.16919,lon:23.23575}
+];
+let selectedRegion=REGIONS[0];
+const fmt=s=>{const d=new Date(s);return d.toLocaleString('el-GR',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
+let autoFollowNow=true;
+function syncSliderToNow(){
+ if(!data||!data.times?.length)return;
+ const now=Date.now();
+ let best=0,bestDiff=Infinity;
+ data.times.forEach((stamp,i)=>{
+  const diff=Math.abs(new Date(stamp).getTime()-now);
+  if(diff<bestDiff){bestDiff=diff;best=i}
+ });
+ $('timeRange').value=best;
+ const first=new Date(data.times[0]).getTime(),last=new Date(data.times[data.times.length-1]).getTime();
+ $('syncStatus').textContent=(now<first||now>last)?'Η τρέχουσα ώρα είναι εκτός εύρους WRF':'Αυτόματος συγχρονισμός με την τοπική ώρα';
+ render();
+}
+
+function fromWRF(w,target){
+ if(!w||!Array.isArray(w.times)||!Array.isArray(w.lats)||!Array.isArray(w.lons))throw Error('Δεν βρέθηκαν τα βασικά πεδία του wrf_data.js');
+ let best={d:Infinity,j:0,i:0};
+ for(let j=0;j<w.lats.length;j++)for(let i=0;i<w.lats[j].length;i++){
+  const d=(w.lats[j][i]-target.lat)**2*Math.cos(target.lat*Math.PI/180)**2+(w.lons[j][i]-target.lon)**2;
+  if(d<best.d)best={d,j,i};
+ }
+ const pick=k=>w[k].map(frame=>Number(frame?.[best.j]?.[best.i]));
+ const t=pick('T2'),u=pick('U10'),v=pick('V10'),ps=pick('PSFC'),rain=pick('RAIN_HOURLY'),cloud=pick('CLOUD'),q=pick('Q2');
+ const cloudProfile=Array.isArray(w.CLOUD_PROFILE)?w.CLOUD_PROFILE:null;
+ const cloudHeights=Array.isArray(w.PROFILE?.[0]?.height_agl_m)?w.PROFILE[0].height_agl_m.map(x=>Number(x)/1000):null;
+ const rh=q.map((qv,i)=>{const tk=t[i]+273.15, e=qv*ps[i]/(0.622+0.378*qv), es=611.2*Math.exp(17.67*t[i]/(t[i]+243.5));return Math.max(0,Math.min(100,100*e/es))});
+ return {location:target.name,requested_lat:target.lat,requested_lon:target.lon,latitude:w.lats[best.j][best.i],longitude:w.lons[best.j][best.i],grid_j:best.j,grid_i:best.i,times:w.times,temp_c:t,wind_ms:u.map((x,i)=>Math.hypot(x,v[i])),wind_dir_deg:u.map((x,i)=>(Math.atan2(-x,-v[i])*180/Math.PI+360)%360),rain_mm:rain.map(x=>Math.max(0,Number(x)||0)),cloud_pct:cloud,cloud_profile:cloudProfile,cloud_heights_km:cloudHeights,profile_location:w.meta?.profile_location||null,psfc_hpa:ps.map(x=>x/100),rh_pct:rh};
+}
+function loadEmbeddedWRF(){
+ try{
+  if(!window.WRF_DATA)throw Error('wrf_data.js δεν φορτώθηκε. Βεβαιώσου ότι βρίσκεται δίπλα στο HTML.');
+  data=fromWRF(window.WRF_DATA,selectedRegion);
+  if(!data.times.length || data.times.length!==49) throw Error('Αναμένονταν 49 ωριαία WRF records, βρέθηκαν '+data.times.length);
+  const arrays=['temp_c','wind_ms','wind_dir_deg','rain_mm','cloud_pct','psfc_hpa','rh_pct'];
+  for(const k of arrays) if(data[k].length!==data.times.length || data[k].some(v=>!Number.isFinite(Number(v)))) throw Error('Μη έγκυρες τιμές στο πεδίο '+k);
+  $('timeRange').max=data.times.length-1;$('selectedPlaceLabel').innerHTML='<span class="place-caption">ΠΕΡΙΟΧΗ ΠΡΟΓΝΩΣΗΣ</span><strong>'+selectedRegion.name+'</strong>';
+  $('mainRegionName').textContent=selectedRegion.name;
+  $('summaryRegionName').textContent=selectedRegion.name;
+  $('statusText').innerHTML='<strong>Πραγματικά δεδομένα WRF</strong> · '+selectedRegion.name+' ('+selectedRegion.lat.toFixed(5)+'°N, '+selectedRegion.lon.toFixed(5)+'°E) · '+data.times.length+' χρονικά βήματα · πλησιέστερο κελί '+data.grid_j+','+data.grid_i+' ('+data.latitude.toFixed(4)+'°N, '+data.longitude.toFixed(4)+'°E)';
+  syncSliderToNow();
+ }catch(e){$('statusText').innerHTML='<strong>Αδυναμία φόρτωσης WRF_DATA</strong> · '+e.message;}
+}const num=(v,n=1)=>Number(v).toFixed(n);
+function current(){
+ if(!data)return;
+ let i=+$('timeRange').value,t=Number(data.temp_c[i]),wind=Number(data.wind_ms[i])*3.6,rh=Number(data.rh_pct?.[i]??0),rain=Math.max(0,Number(data.rain_mm[i]??0)),cloud=Number(data.cloud_pct[i]??0);
+ $('timeLabel').textContent=fmt(data.times[i]);$('mTemp').textContent=num(t)+'°';$('mWind').textContent=num(wind,0);$('mRh').textContent=num(rh,0);$('mRain').textContent=num(rain,2);
+ let icon='☀️',label='Αίθριος καιρός';
+ if(t<=1 && rain>=0.2){icon='❄️';label='Χιονόπτωση / χιονόνερο'};
+ if(!(t<=1 && rain>=0.2)){
+  if(rain>=4){icon='⛈️';label='Έντονη βροχή – πιθανή καταιγίδα'}
+  else if(rain>=0.2){icon='🌧️';label='Βροχή'}
+  else if(rh>=96 && wind<8){icon='🌫️';label='Πιθανή ομίχλη'}
+  else if(cloud>=85){icon='☁️';label='Νεφελώδης'}
+  else if(cloud>=35){icon='🌤️';label='Ήλιος με λίγα νέφη'}
+  else if(cloud>=15){icon='🌥️';label='Λίγες νεφώσεις'}
+ }
+ $('wxIcon').textContent=icon;$('wxText').textContent=label;
+ const bft=beaufort(wind),dir=windCompass(Number(data.wind_dir_deg[i]||0));
+ $('wxDetail').textContent='Νεφοκάλυψη '+num(cloud,0)+'% · Υγρασία '+num(rh,0)+'% · Άνεμος '+dir+' · '+bft+' Bft · Υετός '+num(rain,2)+' mm';
+ $('windAlert').style.display=wind>=45?'block':'none';$('windAlertValue').textContent=num(wind,0)+' km/h · '+bft+' Bft';
+ if(wind>=45){$('wxText').textContent=label+' · Δυνατός άνεμος'}
+}
+function draw(id,values,color,opt={}){let c=$(id);if(!c||!Array.isArray(values)||!values.length)return;let ctx=c.getContext('2d'),w=Math.max(1,c.clientWidth),h=Math.max(1,c.clientHeight),dpr=window.devicePixelRatio||1;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);let a=values.map(Number).filter(Number.isFinite);if(!a.length)return;let min=opt.min??Math.min(...a),max=opt.max??Math.max(...a);if(max===min){max++;min--}let ex=(max-min)*.12;min-=ex;max+=ex;let p={l:42,r:12,t:12,b:28},pw=w-p.l-p.r,ph=h-p.t-p.b,x=i=>p.l+i/(values.length-1||1)*pw,y=v=>p.t+(max-v)/(max-min)*ph;ctx.font='11px system-ui';ctx.fillStyle='#91a8bf';ctx.strokeStyle='#2a4058';for(let k=0;k<=4;k++){let v=min+(max-min)*k/4,yy=y(v);ctx.beginPath();ctx.moveTo(p.l,yy);ctx.lineTo(w-p.r,yy);ctx.stroke();ctx.fillText(v.toFixed(0),4,yy+4)}ctx.beginPath();values.forEach((v,i)=>i?ctx.lineTo(x(i),y(+v)):ctx.moveTo(x(i),y(+v)));ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.stroke();ctx.lineTo(x(values.length-1),h-p.b);ctx.lineTo(x(0),h-p.b);ctx.closePath();ctx.fillStyle=color+'22';ctx.fill();let step=Math.max(1,Math.floor(values.length/6));for(let i=0;i<values.length;i+=step){ctx.fillStyle='#91a8bf';ctx.fillText(new Date(data.times[i]).toLocaleTimeString('el-GR',{hour:'2-digit'}),Math.max(p.l,Math.min(w-35,x(i)-13)),h-7)}let i=+$('timeRange').value;ctx.beginPath();ctx.arc(x(i),y(+values[i]),4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=color;ctx.stroke()}
+function drawRainCloud(){
+ const c=$('rainCloudChart');if(!c||!data)return;
+ const ctx=c.getContext('2d'),w=Math.max(1,c.clientWidth),h=Math.max(1,c.clientHeight),dpr=window.devicePixelRatio||1;
+ c.width=w*dpr;c.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+ const n=data.times.length,pl=43,pr=43,pt=13,pb=31,pw=w-pl-pr,ph=h-pt-pb,maxH=14;
+ const x=i=>pl+(i/(n-1||1))*pw, yCloud=km=>pt+ph-(km/maxH)*ph;
+ const prof=data.cloud_profile, heights=data.cloud_heights_km;
+ // Deep atmospheric background, darker aloft to improve cloud contrast.
+ const bg=ctx.createLinearGradient(0,pt,0,pt+ph);
+ bg.addColorStop(0,'#081a2c');bg.addColorStop(.42,'#102b43');bg.addColorStop(1,'#1b354b');
+ ctx.fillStyle=bg;ctx.fillRect(pl,pt,pw,ph);
+
+ // Build a smooth time-height cloud field from the actual 34 WRF levels.
+ // The native model levels are irregularly spaced, so interpolate in height first,
+ // then smooth gently in time and height to avoid isolated pixel-like dots.
+ const sampleVertical=(ti,km)=>{
+  if(!Array.isArray(prof)||!Array.isArray(heights)||!Array.isArray(prof[ti]))return 0;
+  const row=prof[ti];
+  if(km<heights[0]||km>heights[heights.length-1])return 0;
+  let k=0;while(k<heights.length-2&&heights[k+1]<km)k++;
+  const z0=heights[k],z1=heights[k+1],a=z1===z0?0:(km-z0)/(z1-z0);
+  return Math.max(0,Math.min(100,(Number(row[k])||0)*(1-a)+(Number(row[k+1])||0)*a));
+ };
+ const iw=Math.max(180,n*5),ih=190;
+ const img=ctx.createImageData(iw,ih);
+ for(let py=0;py<ih;py++){
+  const km=maxH*(1-py/(ih-1));
+  for(let px=0;px<iw;px++){
+   const ti=px/(iw-1)*(n-1);
+   let weighted=0,weights=0;
+   // Smooth field with a compact Gaussian kernel across adjacent hours and levels.
+   for(let dt=-2;dt<=2;dt++){
+    const t=Math.max(0,Math.min(n-1,Math.round(ti)+dt));
+    const wt=Math.exp(-.5*(dt/1.05)**2);
+    for(let dz=-2;dz<=2;dz++){
+     const z=km+dz*.18;
+     const wz=Math.exp(-.5*(dz/1.25)**2);
+     weighted+=sampleVertical(t,z)*wt*wz;
+     weights+=wt*wz;
+    }
+   }
+   const cf=weights?weighted/weights:0;
+   const idx=(py*iw+px)*4;
+   // Transparent cloud-free air; cloud opacity increases smoothly with cloud fraction.
+   if(cf<9){img.data[idx+3]=0;continue}
+   const density=Math.max(0,Math.min(1,(cf-8)/72));
+   let r,g,b,baseAlpha;
+   if(km>=8){ // thin high ice-cloud veil
+    r=242;g=248;b=255;baseAlpha=.10+.30*density;
+   }else if(km>=3){ // mid-level cloud
+    r=221;g=230;b=239;baseAlpha=.18+.43*density;
+   }else{ // low, thicker cloud
+    r=166;g=180;b=193;baseAlpha=.26+.52*density;
+   }
+   // Use the local hourly precipitation to darken precipitating cloud columns.
+   const ti0=Math.max(0,Math.min(n-1,Math.round(ti)));
+   const rain=Math.max(0,Number(data.rain_mm[ti0])||0);
+   if(rain>=3){r=25;g=31;b=40;baseAlpha=.78}
+   else if(rain>=.2){r=66;g=77;b=90;baseAlpha=.62}
+   img.data[idx]=r;img.data[idx+1]=g;img.data[idx+2]=b;
+   img.data[idx+3]=Math.round(255*baseAlpha);
+  }
+ }
+ const off=document.createElement('canvas');off.width=iw;off.height=ih;
+ off.getContext('2d').putImageData(img,0,0);
+ ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+ ctx.drawImage(off,pl,pt,pw,ph);ctx.restore();
+
+ // Subtle day/night shading behind the cloud field, based on local time.
+ for(let i=0;i<n;i++){
+  const d=new Date(data.times[i]),hr=d.getHours()+d.getMinutes()/60;
+  if(hr>=7&&hr<17.5){
+   const left=i===0?pl:(x(i-1)+x(i))/2,right=i===n-1?pl+pw:(x(i)+x(i+1))/2;
+   ctx.fillStyle='rgba(255,225,140,.045)';ctx.fillRect(left,pt,right-left,ph);
+  }
+ }
+ // Grid and dual axes.
+ ctx.font='11px system-ui';ctx.textBaseline='middle';ctx.strokeStyle='rgba(170,195,215,.19)';ctx.fillStyle='#a9bfd2';ctx.textAlign='right';
+ const maxRain=Math.max(1,Math.ceil(Math.max(0,...data.rain_mm)*1.2));
+ const yRain=v=>pt+ph-(Math.max(0,v)/maxRain)*ph;
+ for(let k=0;k<=5;k++){
+  const v=maxRain*k/5,yy=yRain(v);ctx.beginPath();ctx.moveTo(pl,yy);ctx.lineTo(pl+pw,yy);ctx.stroke();ctx.fillText(v.toFixed(v<1?1:0),pl-7,yy);
+ }
+ ctx.textAlign='left';
+ for(let k=0;k<=4;k++){
+  const km=maxH*k/4,yy=yCloud(km);ctx.fillText(km===0?'0':km.toFixed(1),pl+pw+7,yy);
+ }
+ // Rain bars on the left axis, clamped at zero.
+ const barW=Math.max(2,pw/n*.48);
+ data.rain_mm.forEach((raw,i)=>{
+  const v=Math.max(0,Number(raw)||0);if(v<=0)return;
+  const yy=yRain(v),xx=x(i)-barW/2;
+  ctx.fillStyle=v>=3?'rgba(18,23,31,.92)':v>=.2?'rgba(87,104,124,.88)':'rgba(155,139,232,.9)';
+  ctx.fillRect(xx,yy,barW,pt+ph-yy);
+ });
+ // Selected model-time marker.
+ const sel=+$('timeRange').value,xx=x(sel);
+ ctx.save();ctx.setLineDash([4,4]);ctx.strokeStyle='#f2f7fb';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(xx,pt);ctx.lineTo(xx,pt+ph);ctx.stroke();ctx.restore();
+ // Time labels.
+ ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#a9bfd2';
+ const step=Math.max(1,Math.ceil(n/8));
+ for(let i=0;i<n;i+=step)ctx.fillText(new Date(data.times[i]).toLocaleTimeString('el-GR',{hour:'2-digit'}),x(i),h-7);
+}
+function render(){if(!data)return;current();draw('tempChart',data.temp_c,'#ffd34e');draw('windChart',data.wind_ms.map(x=>x*3.6),'#42d9ff',{min:0});drawRainCloud()}
+function valid(o){let keys=['times','temp_c','wind_ms','wind_dir_deg','rain_mm','cloud_pct','psfc_hpa'];for(let k of keys)if(!Array.isArray(o[k]))throw Error('Λείπει το πεδίο '+k);let n=o.times.length;if(!n||keys.some(k=>o[k].length!==n))throw Error('Οι χρονοσειρές πρέπει να έχουν ίδιο πλήθος τιμών.');if(!Array.isArray(o.rh_pct))o.rh_pct=Array(n).fill(70);if(Array.isArray(o.rain_mm))o.rain_mm=o.rain_mm.map(v=>Math.max(0,Number(v)||0));return o}
+window.addEventListener('error',e=>{if(e.target&&e.target.tagName==='SCRIPT')$('statusText').innerHTML='<strong>Αποτυχία φόρτωσης wrf_data.js</strong> · Τοποθετήστε το αρχείο στον ίδιο φάκελο με το HTML.';});
+
+function isNight(i){
+ const d=new Date(data.times[i]);
+ const h=d.getHours()+d.getMinutes()/60;
+ // Approximate daylight window for Magnesia in November
+ return h<7 || h>=17.5;
+}
+function wxAt(i){
+ const t=Number(data.temp_c[i]),w=Number(data.wind_ms[i])*3.6,r=Number(data.rain_mm[i]||0),c=Number(data.cloud_pct[i]||0),rh=Number(data.rh_pct?.[i]||0),night=isNight(i);
+ let icon,label;
+ if(t<=1&&r>=0.1){icon=night?'🌨️🌙':'❄️';label='Χιόνι'}
+ else if(r>=3){icon=night?'⛈️🌙':'⛈️';label='Καταιγίδα / έντονη βροχή'}
+ else if(r>=0.2){icon=night?'🌧️🌙':'🌧️';label='Βροχή'}
+ else if(rh>=96&&w<8){icon=night?'🌫️🌙':'🌫️';label='Πιθανή ομίχλη'}
+ else if(c>=85){icon=night?'☁️🌙':'☁️';label='Συννεφιά'}
+ else if(c>=35){icon=night?'☁️🌙':'🌤️';label=night?'Νεφώσεις':'Ήλιος με νέφη'}
+ else if(c>=15){icon=night?'☁️🌙':'🌥️';label=night?'Λίγες νεφώσεις':'Λίγες νεφώσεις'}
+ else {icon=night?'🌙':'☀️';label=night?'Αίθριος νύχτα':'Αίθριος'}
+ return {icon,label,night,wind:w};
+}
+function beaufort(kmh){
+ if(kmh<1)return 0;if(kmh<6)return 1;if(kmh<12)return 2;if(kmh<20)return 3;
+ if(kmh<29)return 4;if(kmh<39)return 5;if(kmh<50)return 6;if(kmh<62)return 7;
+ if(kmh<75)return 8;if(kmh<89)return 9;if(kmh<103)return 10;if(kmh<118)return 11;return 12;
+}
+function beaufortName(b){
+ return ['Άπνοια','Σχεδόν άπνοια','Πολύ ασθενής','Ασθενής','Μέτριος','Λαμπρός','Ισχυρός','Σχεδόν θυελλώδης','Θυελλώδης','Πολύ θυελλώδης','Θύελλα','Ισχυρή θύελλα','Τυφώνας'][b]||'';
+}
+function windCompass(deg){
+ const names=['Βόρειοι','ΒΒΑ','Βορειοανατολικοί','ΑΒΑ','Ανατολικοί','ΑΝΑ','Νοτιοανατολικοί','ΝΝΑ','Νότιοι','ΝΝΔ','Νοτιοδυτικοί','ΔΝΔ','Δυτικοί','ΔΒΔ','Βορειοδυτικοί','ΒΒΔ'];
+ return names[Math.round(((deg%360)+360)%360/22.5)%16];
+}
+function meanWindDirection(inds){
+ let x=0,y=0,n=0;
+ inds.forEach(i=>{
+  const sp=Number(data.wind_ms[i]),deg=Number(data.wind_dir_deg[i])*Math.PI/180;
+  if(Number.isFinite(sp)&&Number.isFinite(deg)){x+=-sp*Math.sin(deg);y+=-sp*Math.cos(deg);n++}
+ });
+ if(!n||Math.hypot(x,y)<0.05)return {deg:null,name:'Μεταβλητοί'};
+ const deg=(Math.atan2(-x,-y)*180/Math.PI+360)%360;
+ return {deg,name:windCompass(deg)};
+}
+function dateBits(ts){
+ const d=new Date(ts);
+ return {day:d.toLocaleDateString('el-GR',{day:'2-digit'}),month:d.toLocaleDateString('el-GR',{month:'long'}),weekday:d.toLocaleDateString('el-GR',{weekday:'long'}),date:d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'})};
+}
+function makeDayCard(start,end,dayNo){
+ const inds=Array.from({length:end-start},(_,k)=>start+k);
+ const temps=inds.map(i=>Number(data.temp_c[i])),winds=inds.map(i=>Number(data.wind_ms[i])*3.6),rains=inds.map(i=>Math.max(0,Number(data.rain_mm[i]||0)));
+ const tmax=Math.max(...temps),tmin=Math.min(...temps),wmax=Math.max(...winds),rtotal=rains.reduce((a,b)=>a+b,0);
+ const peak=inds[temps.indexOf(tmax)],bits=dateBits(data.times[start]),wx=wxAt(peak),bft=beaufort(wmax),dir=meanWindDirection(inds);
+ const strong=wmax>=45;
+ return `<article class="summary-day">
+ <div class="summary-day-top"><div class="summary-date">${bits.day}</div><div><div class="summary-month">${bits.month}</div><div class="summary-weekday">${bits.weekday}</div></div><div class="summary-condition" title="${wx.label}">${wx.icon}</div></div>
+ <div class="summary-day-desc">Ημέρα ${dayNo} · ${wx.label}</div>
+ <div class="summary-stats">
+  <div class="summary-stat tempmax"><span>Μέγιστη θερμοκρασία</span><strong>${tmax.toFixed(1)}°C</strong></div>
+  <div class="summary-stat tempmin"><span>Ελάχιστη θερμοκρασία</span><strong>${tmin.toFixed(1)}°C</strong></div>
+  <div class="summary-stat ${strong?'wind-strong':''}"><span>Μέγιστος άνεμος</span><strong>${wmax.toFixed(0)} km/h · ${bft} Bft</strong></div>
+  <div class="summary-stat"><span>Συνολικός υετός</span><strong>${rtotal.toFixed(1)} mm</strong></div>
+ </div>
+ <div class="wind-dir">Επικρατούσα διεύθυνση: <b>${dir.name}</b>${dir.deg===null?'':' ('+Math.round(dir.deg)+'°)'}</div>
+ ${strong?'<div class="wind-note">💨 ΔΥΝΑΤΟΣ ΑΝΕΜΟΣ · '+beaufortName(bft)+'</div>':''}
+ </article>`;
+}
+function renderSummary(){
+ $('summaryRegionName').textContent=selectedRegion.name;
+ if(!data||data.times.length<2){$('summaryDays').innerHTML='<p>Δεν υπάρχουν διαθέσιμα δεδομένα WRF.</p>';return}
+ const split=Math.min(24,data.times.length-1),end1=split,end2=data.times.length;
+ $('summaryDays').innerHTML=makeDayCard(0,end1,1)+makeDayCard(end1,end2,2);
+ const first=new Date(data.times[0]),last=new Date(data.times[data.times.length-1]);
+ const stamp=v=>v.toLocaleString('el-GR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+ const stampUTC=v=>v.toLocaleString('el-GR',{timeZone:'UTC',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+ const meta=window.WRF_DATA?.meta||{};
+ const generated=meta.generated_at?new Date(meta.generated_at):null;
+ $('modelInfo').innerHTML=`
+ <div class="model-info-item"><span>Διαθέσιμα δεδομένα WRF</span><strong>${stamp(first)} – ${stamp(last)} · ${data.times.length} ωριαία βήματα</strong></div>
+ <div class="model-info-item"><span>Πρώτη διαθέσιμη ώρα</span><strong>${stamp(first)}</strong></div>
+ <div class="model-info-item"><span>Εξαγωγή δεδομένων</span><strong>${generated?stampUTC(generated)+' UTC':'Δεν καταγράφεται'}</strong></div>`;
+
+ const sampled=[];
+ for(let i=0;i<data.times.length;i+=3)sampled.push(i);
+ if(sampled[sampled.length-1]!==data.times.length-1)sampled.push(data.times.length-1);
+ const vals=sampled.map(i=>Number(data.temp_c[i])),lo=Math.min(...vals),hi=Math.max(...vals),span=Math.max(1,hi-lo),W=760,H=110,pad=22;
+ const points=vals.map((v,k)=>`${pad+k*(W-2*pad)/(vals.length-1||1)},${12+(hi-v)/span*65}`).join(' ');
+ const maxV=Math.max(...vals),maxIdx=vals.indexOf(maxV),maxX=pad+maxIdx*(W-2*pad)/(vals.length-1||1),maxY=12+(hi-maxV)/span*65;
+ let svg=`<svg class="summary-temp-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line x1="${pad}" y1="80" x2="${W-pad}" y2="80" stroke="#dbe3ec"/><polyline points="${points}" fill="none" stroke="#e5a900" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${maxX}" cy="${maxY}" r="5" fill="#dc2626"/><text x="${Math.min(W-65,maxX+8)}" y="${Math.max(12,maxY-8)}" fill="#dc2626">Μέγ. ${maxV.toFixed(1)}°</text><text x="4" y="15">${hi.toFixed(0)}°</text><text x="4" y="82">${lo.toFixed(0)}°</text></svg>`;
+ let slots=sampled.map(i=>{const h=new Date(data.times[i]).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}),wx=wxAt(i),b=beaufort(wx.wind);return `<div class="summary-slot"><div class="slot-time">${h}</div><div class="slot-icon" title="${wx.label}${wx.wind>=45?' · Δυνατός άνεμος':''}">${wx.icon}${wx.wind>=45?'💨':''}</div><div class="slot-temp">${Number(data.temp_c[i]).toFixed(1)}°</div><div class="slot-time">${wx.wind.toFixed(0)} km/h · ${b} Bft</div></div>`}).join('');
+ $('summaryTimeline').innerHTML=svg+`<div class="summary-timeline">${slots}</div>`;
+}
+function openSummary(){if(!data){$('statusText').innerHTML='<strong>Τα δεδομένα WRF δεν είναι ακόμη διαθέσιμα.</strong>';return}renderSummary();$('summaryBackdrop').classList.add('open');$('summaryBackdrop').setAttribute('aria-hidden','false')}
+function closeSummary(){$('summaryBackdrop').classList.remove('open');$('summaryBackdrop').setAttribute('aria-hidden','true')}
+
+$('timeRange').addEventListener('input',current);$('timeRange').addEventListener('change',render);
+function renderRegionChoices(){
+ $('regionsGrid').innerHTML=REGIONS.map((r,i)=>`<button class="region-choice ${r===selectedRegion?'active':''}" data-region="${i}"><span>${r.name}<small>${r.lat.toFixed(5)}°N · ${r.lon.toFixed(5)}°E</small></span><span class="check">${r===selectedRegion?'✓':''}</span></button>`).join('');
+ $('regionsGrid').querySelectorAll('[data-region]').forEach(btn=>btn.addEventListener('click',()=>{
+  const next=REGIONS[Number(btn.dataset.region)];
+  if(next===selectedRegion){closeRegions();return}
+  selectedRegion=next;data=fromWRF(window.WRF_DATA,selectedRegion);
+  $('timeRange').max=data.times.length-1;
+  $('statusText').innerHTML='<strong>Πραγματικά δεδομένα WRF</strong> · '+selectedRegion.name+' ('+selectedRegion.lat.toFixed(5)+'°N, '+selectedRegion.lon.toFixed(5)+'°E) · '+data.times.length+' χρονικά βήματα · πλησιέστερο κελί '+data.grid_j+','+data.grid_i+' ('+data.latitude.toFixed(4)+'°N, '+data.longitude.toFixed(4)+'°E)';
+  $('selectedPlaceLabel').innerHTML='<span class="place-caption">ΠΕΡΙΟΧΗ ΠΡΟΓΝΩΣΗΣ</span><strong>'+selectedRegion.name+'</strong>';
+  $('mainRegionName').textContent=selectedRegion.name;
+  $('summaryRegionName').textContent=selectedRegion.name;
+  document.title='MAGNESIA METEOGRAM — '+selectedRegion.name;
+  closeRegions();syncSliderToNow();
+ }));
+}
+function openRegions(){renderRegionChoices();$('regionsBackdrop').classList.add('open');$('regionsBackdrop').setAttribute('aria-hidden','false')}
+function closeRegions(){$('regionsBackdrop').classList.remove('open');$('regionsBackdrop').setAttribute('aria-hidden','true')}
+$('timeRange').addEventListener('input',()=>{autoFollowNow=false;$('syncStatus').textContent='Χειροκίνητη επιλογή ώρας';current()});
+$('syncNowBtn').addEventListener('click',()=>{autoFollowNow=true;syncSliderToNow()});
+setInterval(()=>{if(autoFollowNow&&data)syncSliderToNow()},60000);
+$('summaryBtn').addEventListener('click',openSummary);$('regionsBtn').addEventListener('click',openRegions);$('regionsClose').addEventListener('click',closeRegions);$('regionsBackdrop').addEventListener('click',e=>{if(e.target===$('regionsBackdrop'))closeRegions()});$('summaryClose').addEventListener('click',closeSummary);$('summaryBackdrop').addEventListener('click',e=>{if(e.target===$('summaryBackdrop'))closeSummary()});document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSummary();closeRegions()}});window.addEventListener('resize',()=>{if(data)render()});loadEmbeddedWRF();
+</script></body></html>

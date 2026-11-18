@@ -311,11 +311,27 @@ html, body, #map {
   display: none !important;
 }
 
+
+/* v46-local: το μετεώγραμμα ενσωματώνεται στο μενού παραμέτρων */
+.meteogram-menu-link{
+  display:flex; align-items:center; gap:10px; min-height:43px;
+  margin-top:4px; padding:9px 10px; text-decoration:none;
+  color:#e8f8ff; border:1px solid rgba(32,191,232,.38);
+  border-radius:9px; background:linear-gradient(90deg,rgba(12,54,78,.82),rgba(16,35,54,.78));
+  font-weight:700; font-size:13px;
+}
+.meteogram-menu-link:hover,.meteogram-menu-link:focus{
+  border-color:#20c8f2; background:rgba(15,65,91,.92); color:#fff; outline:none;
+}
+.meteogram-menu-icon{font-size:18px;color:#43dcff;line-height:1}
+.meteogram-menu-arrow{margin-left:auto;font-size:22px;color:#43dcff;line-height:1}
+
 </style>
 </head>
 <body>
 
 <div id="map"></div>
+
 
 <section id="infoModal" class="info-modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
  <div class="info-card">
@@ -417,6 +433,14 @@ html, body, #map {
   <div class="param-section">
     <div class="section-title">Σταθμοί</div>
     <label class="option-item"><input id="stationsToggle" type="checkbox"><span>Εμφάνιση Σταθμών Μαγνησίας</span></label>
+  </div>
+  <div class="param-section">
+    <div class="section-title">Εργαλεία πρόγνωσης</div>
+    <a id="meteogramOpen" class="option-item meteogram-menu-link" href="./meteogram.html">
+      <span class="meteogram-menu-icon" aria-hidden="true">▥</span>
+      <span>Μετεωγράμματα</span>
+      <span class="meteogram-menu-arrow" aria-hidden="true">›</span>
+    </a>
   </div>
   <div class="status-box" id="status">Αναμονή φόρτωσης wrf_data.js...</div>
 </aside>
@@ -821,7 +845,7 @@ function renderMagnesiaComposite(index) {
   cloudOverlay.setData(D, 'cloud', index); cloudOverlay.setVisible(true);
   wrfOverlay.setData(D, 'rain', index); wrfOverlay.setVisible(true);
   windParticles.setData(D, index, false);
-  $('legendTitle').textContent = 'Υετός ανά ώρα (mm/h) · Νεφοκάλυψη (%)';
+  $('legendTitle').textContent = 'Νεφοκάλυψη + υετός ανά ώρα';
   const legend = document.querySelector('.legend');
   let cloudLegend = $('cloudLegend');
   if (!cloudLegend) {
@@ -860,11 +884,6 @@ function setMagnesiaMode(active) {
 }
 
 function updateLegend(type) {
-  // Κανονική λειτουργία: αφαιρούμε το πρόσθετο υπόμνημα νεφοκάλυψης
-  // που χρησιμοποιείται μόνο στη συνδυαστική προβολή Μαγνησίας.
-  const compositeCloudLegend = $('cloudLegend');
-  if (compositeCloudLegend) compositeCloudLegend.remove();
-
   if (type === 'temp') {
     $('legendTitle').textContent = 'Θερμοκρασία 2 m (°C)';
     $('legendScale').style.background = 'linear-gradient(90deg,#313695,#3250be,#1e90ff,#00bed2,#50c878,#ffe600,#ffa500,#ff4b00,#dc143c,#800000)';
