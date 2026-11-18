@@ -1073,13 +1073,22 @@ async function loadData() {
       }
 
       $('timeSlider').max = D.times.length - 1;
-      $('timeSlider').value = 0;
       $('timeSlider').disabled = false;
       $('prevTime').disabled = false;
       $('nextTime').disabled = false;
-      updateTimeDisplay(0, D);
+      // Επιλογή του πλησιέστερου διαθέσιμου WRF χρόνου στην τρέχουσα ώρα Ελλάδας.
+      const nowMs = Date.now();
+      let initialIndex = 0, nearestDiff = Infinity;
+      D.times.forEach((stamp, i) => {
+        const validTime = parseWRFTime(stamp);
+        if (!validTime) return;
+        const diff = Math.abs(validTime.getTime() - nowMs);
+        if (diff < nearestDiff) { nearestDiff = diff; initialIndex = i; }
+      });
+      $('timeSlider').value = initialIndex;
+      updateTimeDisplay(initialIndex, D);
       map.invalidateSize();
-      renderData(0);
+      renderData(initialIndex);
       status(`Επιτυχής φόρτωση WRF: ${D.times.length} χρονικά βήματα · ${D.CLOUD ? 'νεφοκάλυψη διαθέσιμη' : 'χωρίς CLOUD — απαιτείται το νεότερο wrf_data.js'}.`);
       setLoadingProgress(100, 'Έτοιμο – ο χάρτης είναι διαθέσιμος.');
       window.setTimeout(hideLoadingProgress, 650);

@@ -25,9 +25,9 @@
 .selected-place{display:flex;flex-direction:column;gap:2px;padding:7px 12px;border:1px solid #287da4;border-radius:10px;background:#12314a;min-width:180px}
 .selected-place .place-caption{font-size:9px;letter-spacing:1px;color:#81b7d0;font-weight:800}
 .selected-place strong{font-size:15px;color:#70e1ff;font-weight:850}
-.summary-region-name{font-size:20px;font-weight:900;color:#75e2ff;line-height:1.2;margin:3px 0 5px;text-shadow:0 2px 12px #0005}
+.summary-region-nav{display:flex;align-items:center;gap:9px;margin:3px 0 5px}.summary-region-name{font-size:20px;font-weight:900;color:#75e2ff;line-height:1.2;margin:0;text-shadow:0 2px 12px #0005}.summary-region-arrow{width:34px;height:32px;flex:0 0 34px;padding:0;border:1px solid #287da4;border-radius:9px;background:#123b56;color:#75e2ff;font-size:25px;line-height:1;display:grid;place-items:center}.summary-region-arrow:hover,.summary-region-arrow:focus{background:#185477;border-color:#55dcff;color:#fff;outline:none}.summary-region-arrow:active{transform:scale(.96)}
 .summary-head h2{margin-top:2px}
-@media(max-width:420px){.main-region{font-size:15px}.selected-place{min-width:145px}.selected-place strong{font-size:14px}.summary-region-name{font-size:18px}}
+@media(max-width:420px){.main-region{font-size:15px}.selected-place{min-width:145px}.selected-place strong{font-size:14px}.summary-region-name{font-size:17px}.summary-region-nav{gap:6px}.summary-region-arrow{width:30px;height:30px;flex-basis:30px}}
 
 .sync-now{padding:8px 11px;border-color:#2686ad;background:#123b56;color:#75e2ff;font-size:12px;white-space:nowrap}
 .sync-status{font-size:10px;color:#8fb0c9;min-width:125px}
@@ -53,7 +53,7 @@
 </div>
 <div class="summary-backdrop" id="summaryBackdrop" aria-hidden="true">
  <section class="summary-modal" role="dialog" aria-modal="true" aria-labelledby="summaryTitle">
-  <div class="summary-head"><div><div class="summary-kicker">ΠΕΡΙΟΧΗ ΠΡΟΓΝΩΣΗΣ</div><div class="summary-region-name" id="summaryRegionName">Κωφοί Μαγνησίας</div><h2 id="summaryTitle">Συνοπτική πρόγνωση 48ώρου</h2></div><button class="summary-close" id="summaryClose" aria-label="Κλείσιμο">✕</button></div>
+  <div class="summary-head"><div><div class="summary-kicker">ΠΕΡΙΟΧΗ ΠΡΟΓΝΩΣΗΣ</div><div class="summary-region-nav"><button type="button" class="summary-region-arrow" id="summaryPrevRegion" aria-label="Προηγούμενη περιοχή" title="Προηγούμενη περιοχή">‹</button><div class="summary-region-name" id="summaryRegionName">Κωφοί Μαγνησίας</div><button type="button" class="summary-region-arrow" id="summaryNextRegion" aria-label="Επόμενη περιοχή" title="Επόμενη περιοχή">›</button></div><h2 id="summaryTitle">Συνοπτική πρόγνωση 48ώρου</h2></div><button class="summary-close" id="summaryClose" aria-label="Κλείσιμο">✕</button></div>
   <div class="model-info" id="modelInfo"></div>
   <div class="summary-days" id="summaryDays"></div>
   <div class="summary-chart-wrap"><div class="summary-chart-title">Εξέλιξη θερμοκρασίας και καιρού ανά 3 ώρες</div><div id="summaryTimeline"></div></div>
@@ -94,18 +94,23 @@ const REGIONS=[
  {name:'Μηλίνα',lat:39.16919,lon:23.23575}
 ];
 let selectedRegion=REGIONS[0];
-const fmt=s=>{const d=new Date(s);return d.toLocaleString('el-GR',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
+// Τα timestamps του WRF χωρίς ζώνη θεωρούνται UTC. Η παρουσία Z/offset διατηρείται.
+function parseWRFTime(value){const raw=String(value??'').trim();if(!raw)return null;const hasZone=/(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw);const d=new Date(hasZone?raw:raw+'Z');return Number.isNaN(d.getTime())?null:d;}
+const ATHENS_TZ='Europe/Athens';
+const fmt=s=>{const d=parseWRFTime(s);return d?d.toLocaleString('el-GR',{timeZone:ATHENS_TZ,weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}):String(s??'').replace('T',' | ')};
+const athensHour=d=>Number(new Intl.DateTimeFormat('en-GB',{timeZone:ATHENS_TZ,hour:'2-digit',hourCycle:'h23'}).format(d));
+const athensMinute=d=>Number(new Intl.DateTimeFormat('en-GB',{timeZone:ATHENS_TZ,minute:'2-digit'}).format(d));
 let autoFollowNow=true;
 function syncSliderToNow(){
  if(!data||!data.times?.length)return;
  const now=Date.now();
  let best=0,bestDiff=Infinity;
  data.times.forEach((stamp,i)=>{
-  const diff=Math.abs(new Date(stamp).getTime()-now);
+  const validTime=parseWRFTime(stamp);if(!validTime)return;const diff=Math.abs(validTime.getTime()-now);
   if(diff<bestDiff){bestDiff=diff;best=i}
  });
  $('timeRange').value=best;
- const first=new Date(data.times[0]).getTime(),last=new Date(data.times[data.times.length-1]).getTime();
+ const first=parseWRFTime(data.times[0])?.getTime()??now,last=parseWRFTime(data.times[data.times.length-1])?.getTime()??now;
  $('syncStatus').textContent=(now<first||now>last)?'Η τρέχουσα ώρα είναι εκτός εύρους WRF':'Αυτόματος συγχρονισμός με την τοπική ώρα';
  render();
 }
@@ -158,7 +163,7 @@ function current(){
  $('windAlert').style.display=wind>=45?'block':'none';$('windAlertValue').textContent=num(wind,0)+' km/h · '+bft+' Bft';
  if(wind>=45){$('wxText').textContent=label+' · Δυνατός άνεμος'}
 }
-function draw(id,values,color,opt={}){let c=$(id);if(!c||!Array.isArray(values)||!values.length)return;let ctx=c.getContext('2d'),w=Math.max(1,c.clientWidth),h=Math.max(1,c.clientHeight),dpr=window.devicePixelRatio||1;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);let a=values.map(Number).filter(Number.isFinite);if(!a.length)return;let min=opt.min??Math.min(...a),max=opt.max??Math.max(...a);if(max===min){max++;min--}let ex=(max-min)*.12;min-=ex;max+=ex;let p={l:42,r:12,t:12,b:28},pw=w-p.l-p.r,ph=h-p.t-p.b,x=i=>p.l+i/(values.length-1||1)*pw,y=v=>p.t+(max-v)/(max-min)*ph;ctx.font='11px system-ui';ctx.fillStyle='#91a8bf';ctx.strokeStyle='#2a4058';for(let k=0;k<=4;k++){let v=min+(max-min)*k/4,yy=y(v);ctx.beginPath();ctx.moveTo(p.l,yy);ctx.lineTo(w-p.r,yy);ctx.stroke();ctx.fillText(v.toFixed(0),4,yy+4)}ctx.beginPath();values.forEach((v,i)=>i?ctx.lineTo(x(i),y(+v)):ctx.moveTo(x(i),y(+v)));ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.stroke();ctx.lineTo(x(values.length-1),h-p.b);ctx.lineTo(x(0),h-p.b);ctx.closePath();ctx.fillStyle=color+'22';ctx.fill();let step=Math.max(1,Math.floor(values.length/6));for(let i=0;i<values.length;i+=step){ctx.fillStyle='#91a8bf';ctx.fillText(new Date(data.times[i]).toLocaleTimeString('el-GR',{hour:'2-digit'}),Math.max(p.l,Math.min(w-35,x(i)-13)),h-7)}let i=+$('timeRange').value;ctx.beginPath();ctx.arc(x(i),y(+values[i]),4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=color;ctx.stroke()}
+function draw(id,values,color,opt={}){let c=$(id);if(!c||!Array.isArray(values)||!values.length)return;let ctx=c.getContext('2d'),w=Math.max(1,c.clientWidth),h=Math.max(1,c.clientHeight),dpr=window.devicePixelRatio||1;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);let a=values.map(Number).filter(Number.isFinite);if(!a.length)return;let min=opt.min??Math.min(...a),max=opt.max??Math.max(...a);if(max===min){max++;min--}let ex=(max-min)*.12;min-=ex;max+=ex;let p={l:42,r:12,t:12,b:28},pw=w-p.l-p.r,ph=h-p.t-p.b,x=i=>p.l+i/(values.length-1||1)*pw,y=v=>p.t+(max-v)/(max-min)*ph;ctx.font='11px system-ui';ctx.fillStyle='#91a8bf';ctx.strokeStyle='#2a4058';for(let k=0;k<=4;k++){let v=min+(max-min)*k/4,yy=y(v);ctx.beginPath();ctx.moveTo(p.l,yy);ctx.lineTo(w-p.r,yy);ctx.stroke();ctx.fillText(v.toFixed(0),4,yy+4)}ctx.beginPath();values.forEach((v,i)=>i?ctx.lineTo(x(i),y(+v)):ctx.moveTo(x(i),y(+v)));ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.stroke();ctx.lineTo(x(values.length-1),h-p.b);ctx.lineTo(x(0),h-p.b);ctx.closePath();ctx.fillStyle=color+'22';ctx.fill();let step=Math.max(1,Math.floor(values.length/6));for(let i=0;i<values.length;i+=step){ctx.fillStyle='#91a8bf';ctx.fillText(parseWRFTime(data.times[i]).toLocaleTimeString('el-GR',{timeZone:ATHENS_TZ,hour:'2-digit',hourCycle:'h23'}),Math.max(p.l,Math.min(w-35,x(i)-13)),h-7)}let i=+$('timeRange').value;ctx.beginPath();ctx.arc(x(i),y(+values[i]),4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=color;ctx.stroke()}
 function drawRainCloud(){
  const c=$('rainCloudChart');if(!c||!data)return;
  const ctx=c.getContext('2d'),w=Math.max(1,c.clientWidth),h=Math.max(1,c.clientHeight),dpr=window.devicePixelRatio||1;
@@ -229,7 +234,7 @@ function drawRainCloud(){
 
  // Subtle day/night shading behind the cloud field, based on local time.
  for(let i=0;i<n;i++){
-  const d=new Date(data.times[i]),hr=d.getHours()+d.getMinutes()/60;
+  const d=parseWRFTime(data.times[i]),hr=d?athensHour(d)+athensMinute(d)/60:12;
   if(hr>=7&&hr<17.5){
    const left=i===0?pl:(x(i-1)+x(i))/2,right=i===n-1?pl+pw:(x(i)+x(i+1))/2;
    ctx.fillStyle='rgba(255,225,140,.045)';ctx.fillRect(left,pt,right-left,ph);
@@ -260,15 +265,15 @@ function drawRainCloud(){
  // Time labels.
  ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#a9bfd2';
  const step=Math.max(1,Math.ceil(n/8));
- for(let i=0;i<n;i+=step)ctx.fillText(new Date(data.times[i]).toLocaleTimeString('el-GR',{hour:'2-digit'}),x(i),h-7);
+ for(let i=0;i<n;i+=step)ctx.fillText(parseWRFTime(data.times[i]).toLocaleTimeString('el-GR',{timeZone:ATHENS_TZ,hour:'2-digit',hourCycle:'h23'}),x(i),h-7);
 }
 function render(){if(!data)return;current();draw('tempChart',data.temp_c,'#ffd34e');draw('windChart',data.wind_ms.map(x=>x*3.6),'#42d9ff',{min:0});drawRainCloud()}
 function valid(o){let keys=['times','temp_c','wind_ms','wind_dir_deg','rain_mm','cloud_pct','psfc_hpa'];for(let k of keys)if(!Array.isArray(o[k]))throw Error('Λείπει το πεδίο '+k);let n=o.times.length;if(!n||keys.some(k=>o[k].length!==n))throw Error('Οι χρονοσειρές πρέπει να έχουν ίδιο πλήθος τιμών.');if(!Array.isArray(o.rh_pct))o.rh_pct=Array(n).fill(70);if(Array.isArray(o.rain_mm))o.rain_mm=o.rain_mm.map(v=>Math.max(0,Number(v)||0));return o}
 window.addEventListener('error',e=>{if(e.target&&e.target.tagName==='SCRIPT')$('statusText').innerHTML='<strong>Αποτυχία φόρτωσης wrf_data.js</strong> · Τοποθετήστε το αρχείο στον ίδιο φάκελο με το HTML.';});
 
 function isNight(i){
- const d=new Date(data.times[i]);
- const h=d.getHours()+d.getMinutes()/60;
+ const d=parseWRFTime(data.times[i]);
+ const h=d?athensHour(d)+athensMinute(d)/60:12;
  // Approximate daylight window for Magnesia in November
  return h<7 || h>=17.5;
 }
@@ -308,8 +313,8 @@ function meanWindDirection(inds){
  return {deg,name:windCompass(deg)};
 }
 function dateBits(ts){
- const d=new Date(ts);
- return {day:d.toLocaleDateString('el-GR',{day:'2-digit'}),month:d.toLocaleDateString('el-GR',{month:'long'}),weekday:d.toLocaleDateString('el-GR',{weekday:'long'}),date:d.toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit'})};
+ const d=parseWRFTime(ts);
+ return {day:d.toLocaleDateString('el-GR',{timeZone:ATHENS_TZ,day:'2-digit'}),month:d.toLocaleDateString('el-GR',{timeZone:ATHENS_TZ,month:'long'}),weekday:d.toLocaleDateString('el-GR',{timeZone:ATHENS_TZ,weekday:'long'}),date:d.toLocaleDateString('el-GR',{timeZone:ATHENS_TZ,day:'2-digit',month:'2-digit'})};
 }
 function makeDayCard(start,end,dayNo){
  const inds=Array.from({length:end-start},(_,k)=>start+k);
@@ -335,8 +340,8 @@ function renderSummary(){
  if(!data||data.times.length<2){$('summaryDays').innerHTML='<p>Δεν υπάρχουν διαθέσιμα δεδομένα WRF.</p>';return}
  const split=Math.min(24,data.times.length-1),end1=split,end2=data.times.length;
  $('summaryDays').innerHTML=makeDayCard(0,end1,1)+makeDayCard(end1,end2,2);
- const first=new Date(data.times[0]),last=new Date(data.times[data.times.length-1]);
- const stamp=v=>v.toLocaleString('el-GR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+ const first=parseWRFTime(data.times[0]),last=parseWRFTime(data.times[data.times.length-1]);
+ const stamp=v=>v.toLocaleString('el-GR',{timeZone:ATHENS_TZ,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
  const stampUTC=v=>v.toLocaleString('el-GR',{timeZone:'UTC',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
  const meta=window.WRF_DATA?.meta||{};
  const generated=meta.generated_at?new Date(meta.generated_at):null;
@@ -352,7 +357,7 @@ function renderSummary(){
  const points=vals.map((v,k)=>`${pad+k*(W-2*pad)/(vals.length-1||1)},${12+(hi-v)/span*65}`).join(' ');
  const maxV=Math.max(...vals),maxIdx=vals.indexOf(maxV),maxX=pad+maxIdx*(W-2*pad)/(vals.length-1||1),maxY=12+(hi-maxV)/span*65;
  let svg=`<svg class="summary-temp-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><line x1="${pad}" y1="80" x2="${W-pad}" y2="80" stroke="#dbe3ec"/><polyline points="${points}" fill="none" stroke="#e5a900" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${maxX}" cy="${maxY}" r="5" fill="#dc2626"/><text x="${Math.min(W-65,maxX+8)}" y="${Math.max(12,maxY-8)}" fill="#dc2626">Μέγ. ${maxV.toFixed(1)}°</text><text x="4" y="15">${hi.toFixed(0)}°</text><text x="4" y="82">${lo.toFixed(0)}°</text></svg>`;
- let slots=sampled.map(i=>{const h=new Date(data.times[i]).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit'}),wx=wxAt(i),b=beaufort(wx.wind);return `<div class="summary-slot"><div class="slot-time">${h}</div><div class="slot-icon" title="${wx.label}${wx.wind>=45?' · Δυνατός άνεμος':''}">${wx.icon}${wx.wind>=45?'💨':''}</div><div class="slot-temp">${Number(data.temp_c[i]).toFixed(1)}°</div><div class="slot-time">${wx.wind.toFixed(0)} km/h · ${b} Bft</div></div>`}).join('');
+ let slots=sampled.map(i=>{const h=parseWRFTime(data.times[i]).toLocaleTimeString('el-GR',{timeZone:ATHENS_TZ,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}),wx=wxAt(i),b=beaufort(wx.wind);return `<div class="summary-slot"><div class="slot-time">${h}</div><div class="slot-icon" title="${wx.label}${wx.wind>=45?' · Δυνατός άνεμος':''}">${wx.icon}${wx.wind>=45?'💨':''}</div><div class="slot-temp">${Number(data.temp_c[i]).toFixed(1)}°</div><div class="slot-time">${wx.wind.toFixed(0)} km/h · ${b} Bft</div></div>`}).join('');
  $('summaryTimeline').innerHTML=svg+`<div class="summary-timeline">${slots}</div>`;
 }
 function openSummary(){if(!data){$('statusText').innerHTML='<strong>Τα δεδομένα WRF δεν είναι ακόμη διαθέσιμα.</strong>';return}renderSummary();$('summaryBackdrop').classList.add('open');$('summaryBackdrop').setAttribute('aria-hidden','false')}
@@ -362,18 +367,28 @@ $('timeRange').addEventListener('input',current);$('timeRange').addEventListener
 function renderRegionChoices(){
  $('regionsGrid').innerHTML=REGIONS.map((r,i)=>`<button class="region-choice ${r===selectedRegion?'active':''}" data-region="${i}"><span>${r.name}<small>${r.lat.toFixed(5)}°N · ${r.lon.toFixed(5)}°E</small></span><span class="check">${r===selectedRegion?'✓':''}</span></button>`).join('');
  $('regionsGrid').querySelectorAll('[data-region]').forEach(btn=>btn.addEventListener('click',()=>{
-  const next=REGIONS[Number(btn.dataset.region)];
-  if(next===selectedRegion){closeRegions();return}
-  selectedRegion=next;data=fromWRF(window.WRF_DATA,selectedRegion);
-  $('timeRange').max=data.times.length-1;
-  $('statusText').innerHTML='<strong>Πραγματικά δεδομένα WRF</strong> · '+selectedRegion.name+' ('+selectedRegion.lat.toFixed(5)+'°N, '+selectedRegion.lon.toFixed(5)+'°E) · '+data.times.length+' χρονικά βήματα · πλησιέστερο κελί '+data.grid_j+','+data.grid_i+' ('+data.latitude.toFixed(4)+'°N, '+data.longitude.toFixed(4)+'°E)';
-  $('selectedPlaceLabel').innerHTML='<span class="place-caption">ΠΕΡΙΟΧΗ ΠΡΟΓΝΩΣΗΣ</span><strong>'+selectedRegion.name+'</strong>';
-  $('mainRegionName').textContent=selectedRegion.name;
-  $('summaryRegionName').textContent=selectedRegion.name;
-  document.title='MAGNESIA METEOGRAM — '+selectedRegion.name;
-  closeRegions();syncSliderToNow();
+  const nextIndex=Number(btn.dataset.region);
+  if(REGIONS[nextIndex]===selectedRegion){closeRegions();return}
+  selectRegion(nextIndex);closeRegions();
  }));
 }
+
+function selectRegion(index){
+ const next=REGIONS[(index+REGIONS.length)%REGIONS.length];
+ selectedRegion=next;data=fromWRF(window.WRF_DATA,selectedRegion);
+ $('timeRange').max=data.times.length-1;
+ $('statusText').innerHTML='<strong>Πραγματικά δεδομένα WRF</strong> · '+selectedRegion.name+' ('+selectedRegion.lat.toFixed(5)+'°N, '+selectedRegion.lon.toFixed(5)+'°E) · '+data.times.length+' χρονικά βήματα · πλησιέστερο κελί '+data.grid_j+','+data.grid_i+' ('+data.latitude.toFixed(4)+'°N, '+data.longitude.toFixed(4)+'°E)';
+ $('selectedPlaceLabel').innerHTML='<span class="place-caption">ΠΕΡΙΟΧΗ ΠΡΟΓΝΩΣΗΣ</span><strong>'+selectedRegion.name+'</strong>';
+ $('mainRegionName').textContent=selectedRegion.name;
+ $('summaryRegionName').textContent=selectedRegion.name;
+ document.title='MAGNESIA METEOGRAM — '+selectedRegion.name;
+ renderRegionChoices();syncSliderToNow();
+ if($('summaryBackdrop').classList.contains('open'))renderSummary();
+}
+function stepSummaryRegion(delta){const index=REGIONS.indexOf(selectedRegion);selectRegion(index+delta);}
+$('summaryPrevRegion').addEventListener('click',()=>stepSummaryRegion(-1));
+$('summaryNextRegion').addEventListener('click',()=>stepSummaryRegion(1));
+
 function openRegions(){renderRegionChoices();$('regionsBackdrop').classList.add('open');$('regionsBackdrop').setAttribute('aria-hidden','false')}
 function closeRegions(){$('regionsBackdrop').classList.remove('open');$('regionsBackdrop').setAttribute('aria-hidden','true')}
 $('timeRange').addEventListener('input',()=>{autoFollowNow=false;$('syncStatus').textContent='Χειροκίνητη επιλογή ώρας';current()});
