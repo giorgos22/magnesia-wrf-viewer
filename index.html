@@ -402,6 +402,22 @@ body.drawer-menu-open .legend {
   }
 }
 
+
+/* Place search control */
+.place-search-toggle{position:absolute;z-index:1300;top:62px;right:16px;width:40px;height:38px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:#eaf7ff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px #0009;backdrop-filter:blur(8px)}
+.place-search-toggle:hover,.place-search-toggle.active{border-color:var(--cyan);color:var(--cyan)}
+.place-search-toggle svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.place-search-panel{position:absolute;z-index:1301;top:108px;right:16px;width:min(340px,calc(100vw - 32px));display:none;padding:11px;background:rgba(11,20,34,.97);border:1px solid var(--line);border-radius:11px;box-shadow:0 8px 26px #000b;backdrop-filter:blur(10px)}
+.place-search-panel.open{display:block}
+.place-search-row{display:flex;gap:7px}
+.place-search-input{flex:1;min-width:0;padding:10px 11px;border:1px solid #3c5472;border-radius:7px;background:#101d30;color:#fff;font-size:14px;outline:none}
+.place-search-input:focus{border-color:var(--cyan)}
+.place-search-go,.place-search-clear{width:38px;flex:0 0 38px;border:1px solid #3c5472;border-radius:7px;background:#172940;color:#eaf7ff;font-size:17px;cursor:pointer}
+.place-search-go:hover,.place-search-clear:hover{border-color:var(--cyan);color:var(--cyan)}
+.place-search-status{min-height:16px;margin:7px 2px 0;color:#9eb2c9;font-size:11px;line-height:1.4}
+.place-search-marker{filter:drop-shadow(0 1px 5px rgba(0,0,0,.85))}
+@media(max-width:600px){.place-search-toggle{top:62px;right:12px}.place-search-panel{top:108px;right:12px}}
+
 </style>
 </head>
 <body>
@@ -462,6 +478,19 @@ body.drawer-menu-open .legend {
   </div>
 </section>
 <button id="modelInfoToggle" class="top-brand" type="button" aria-label="Πληροφορίες μοντέλου WRF MAGNESIA 3,5 km" title="Πληροφορίες μοντέλου" aria-haspopup="dialog" aria-controls="infoModal">WRF MAGNESIA 3,5 km <span aria-hidden="true" style="font-size:15px;margin-left:6px">ⓘ</span></button>
+
+
+<button id="placeSearchToggle" class="place-search-toggle" type="button" aria-label="Αναζήτηση τοποθεσίας" title="Αναζήτηση τοποθεσίας" aria-expanded="false">
+ <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+</button>
+<div id="placeSearchPanel" class="place-search-panel" role="search">
+ <div class="place-search-row">
+  <input id="placeSearchInput" class="place-search-input" type="search" placeholder="Αναζήτηση πόλης ή χωριού…" autocomplete="off" aria-label="Όνομα τοποθεσίας">
+  <button id="placeSearchGo" class="place-search-go" type="button" aria-label="Αναζήτηση">⌕</button>
+  <button id="placeSearchClear" class="place-search-clear" type="button" aria-label="Καθαρισμός">×</button>
+ </div>
+ <div id="placeSearchStatus" class="place-search-status">Πληκτρολόγησε π.χ. Βόλος, Αλμυρός ή Κωφοί.</div>
+</div>
 
 <div class="legend">
   <div class="legend-title" id="legendTitle">Θερμοκρασία 2 m (°C)</div>
@@ -1169,6 +1198,70 @@ $('drawerClose').addEventListener('click', () => toggleDrawer(false));
 toggleDrawer(false); // Το μενού ξεκινά πάντα κλειστό, και σε κινητά.
 $('magnesiaModeToggle').addEventListener('click', () => setMagnesiaMode(!magnesiaModeActive));
 
+
+/* ===== GEOGRAPHIC PLACE SEARCH ===== */
+let placeSearchMarker = null;
+let placeSearchAbort = null;
+const placeSearchPanel = $('placeSearchPanel');
+const placeSearchInput = $('placeSearchInput');
+const placeSearchStatus = $('placeSearchStatus');
+function closePlaceSearch(){
+  placeSearchPanel.classList.remove('open');
+  $('placeSearchToggle').classList.remove('active');
+  $('placeSearchToggle').setAttribute('aria-expanded','false');
+}
+$('placeSearchToggle').addEventListener('click',()=>{
+  const open = !placeSearchPanel.classList.contains('open');
+  placeSearchPanel.classList.toggle('open',open);
+  $('placeSearchToggle').classList.toggle('active',open);
+  $('placeSearchToggle').setAttribute('aria-expanded',String(open));
+  if(open){ placeSearchInput.focus(); placeSearchInput.select(); }
+});
+async function searchPlace(){
+  const query = placeSearchInput.value.trim();
+  if(!query){ placeSearchStatus.textContent='Γράψε το όνομα μιας τοποθεσίας.'; return; }
+  if(placeSearchAbort) placeSearchAbort.abort();
+  placeSearchAbort = new AbortController();
+  placeSearchStatus.textContent='Αναζήτηση τοποθεσίας…';
+  $('placeSearchGo').disabled = true;
+  try{
+    const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countrycodes=gr&q='+encodeURIComponent(query);
+    const response = await fetch(url,{headers:{'Accept':'application/json'},signal:placeSearchAbort.signal});
+    if(!response.ok) throw new Error('Η υπηρεσία αναζήτησης δεν απάντησε.');
+    const results = await response.json();
+    if(!results.length){ placeSearchStatus.textContent='Δεν βρέθηκε τοποθεσία στην Ελλάδα. Δοκίμασε διαφορετική γραφή.'; return; }
+    const result = results[0];
+    const lat = Number(result.lat), lon = Number(result.lon);
+    if(!Number.isFinite(lat)||!Number.isFinite(lon)) throw new Error('Μη έγκυρες συντεταγμένες.');
+    const label = (result.name || query) + (result.address?.county ? ', '+result.address.county : result.address?.state ? ', '+result.address.state : '');
+    if(placeSearchMarker) map.removeLayer(placeSearchMarker);
+    // Απενεργοποιούμε προσωρινά τα όρια της λειτουργίας Μαγνησίας όταν ο στόχος είναι εκτός περιοχής.
+    if(magnesiaModeActive && !MAGNESIA_BOUNDS.contains([lat,lon])){
+      map.setMaxBounds(null); map.options.maxBoundsViscosity=0; map.setMinZoom(0);
+    }
+    const targetZoom = Math.max(11,Math.min(13, map.getMaxZoom()));
+    map.flyTo([lat,lon],targetZoom,{duration:1.25});
+    placeSearchMarker = L.circleMarker([lat,lon],{
+      radius:8,color:'#ffffff',weight:2.5,fillColor:'#00d5ff',fillOpacity:1,className:'place-search-marker',interactive:true
+    }).addTo(map);
+    placeSearchMarker.bindTooltip(label,{permanent:true,direction:'top',offset:[0,-9],className:'station-label'}).openTooltip();
+    placeSearchStatus.textContent='Εστίαση: '+label+' · '+lat.toFixed(5)+', '+lon.toFixed(5);
+    closePlaceSearch();
+  }catch(error){
+    if(error.name!=='AbortError') placeSearchStatus.textContent=error.message || 'Παρουσιάστηκε σφάλμα στην αναζήτηση.';
+  }finally{$('placeSearchGo').disabled=false;}
+}
+$('placeSearchGo').addEventListener('click',searchPlace);
+placeSearchInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchPlace();} if(e.key==='Escape')closePlaceSearch();});
+$('placeSearchClear').addEventListener('click',()=>{
+  placeSearchInput.value=''; placeSearchStatus.textContent='Πληκτρολόγησε π.χ. Βόλος, Αλμυρός ή Κωφοί.';
+  if(placeSearchMarker){map.removeLayer(placeSearchMarker);placeSearchMarker=null;}
+  placeSearchInput.focus();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePlaceSearch();});
+
+
+
 $('timeSlider').addEventListener('input', e => { gridHoverTip.style.display = 'none'; renderData(Number(e.target.value)); });
 function updateTimeSliderProgress() { const el = $('timeSlider'); const max = Number(el.max) || 0; const value = Number(el.value) || 0; el.style.setProperty('--range-progress', (max ? value / max * 100 : 0) + '%'); }
 $('timeSlider').addEventListener('input', updateTimeSliderProgress);
@@ -1591,8 +1684,17 @@ function openGridPanel(point) {
 }
 $('gpClose').addEventListener('click', () => gridPointPanel.classList.remove('open'));
 
-/* Το πάνελ ανοίγει μόνο με κλικ. Επιλέγεται πάντα το κοντινότερο
-   grid point στη θέση του κλικ, χωρίς περιορισμό απόστασης. */
+/* Κλείσιμο του πάνελ όταν ο χρήστης πατήσει έξω από αυτό.
+   Το πάτημα στον χάρτη συνεχίζει κανονικά προς το Leaflet:
+   το map click επιλέγει το νέο grid point και ανοίγει το πάνελ
+   με τα δεδομένα της νέας περιοχής. */
+document.addEventListener('pointerdown', e => {
+  if (!gridPointPanel.classList.contains('open')) return;
+  if (gridPointPanel.contains(e.target)) return;
+  gridPointPanel.classList.remove('open');
+}, true);
+
+/* Το κοντινότερο grid point επιλέγεται σε κάθε πάτημα στον χάρτη. */
 map.on('click', e => {
   const point = nearestGridPoint(e.containerPoint);
   if (point) openGridPanel(point);
