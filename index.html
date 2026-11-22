@@ -125,6 +125,13 @@ html, body, #map {
 .stations-network-icon { display:grid; place-items:center; width:25px; height:25px; flex:0 0 25px; border-radius:7px; color:var(--cyan); background:rgba(0,213,255,.12); font-size:19px; }
 .stations-network-arrow { margin-left:auto; color:var(--cyan); font-size:17px; }
 .option-item input { accent-color: var(--cyan); width: 15px; height: 15px; margin: 0; cursor: pointer; }
+.upper-level-control{margin:1px 4px 11px 28px;padding:5px 0 7px;border-bottom:1px solid rgba(90,125,153,.18)}
+.upper-level-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;color:#9fb6c8;font-size:10px;letter-spacing:.15px}
+.upper-level-head strong{color:#bdeefa;font-size:10px;font-weight:700}
+.upper-level-range{display:block;width:100%;height:4px;margin:0;appearance:none;-webkit-appearance:none;border-radius:99px;outline:none;background:linear-gradient(90deg,var(--cyan) 0%,rgba(111,145,168,.28) 0%);cursor:pointer}
+.upper-level-range::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#8deaff;border:2px solid #e5fbff;box-shadow:0 0 0 3px rgba(0,213,255,.12)}
+.upper-level-range::-moz-range-thumb{width:9px;height:9px;border-radius:50%;background:#8deaff;border:2px solid #e5fbff;box-shadow:0 0 0 3px rgba(0,213,255,.12)}
+.upper-level-ticks{display:flex;justify-content:space-between;margin-top:6px;color:#71899e;font-size:9px}
 .status-box {
   margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(45, 66, 91, 0.6);
   font-size: 11px; color: var(--yellow); line-height: 1.4; word-break: break-all;
@@ -555,6 +562,17 @@ body.drawer-menu-open .legend {
   <div class="param-section">
     <div class="section-title">Μεταβλητές</div>
     <label class="option-item"><input type="radio" name="wrfField" value="temp" checked><span>Θερμοκρασία 2m (°C)</span></label>
+    <div class="upper-level-control" id="upperLevelControl">
+      <div class="upper-level-head"><span>Θερμοκρασία καθ’ ύψος</span><strong id="upperLevelValue">925 hPa</strong></div>
+      <input class="upper-level-range" id="upperLevelSlider" type="range" min="0" max="3" value="0" step="1" aria-label="Επιλογή ισοβαρικού επιπέδου θερμοκρασίας">
+      <div class="upper-level-ticks"><span>925</span><span>850</span><span>700</span><span>500 hPa</span></div>
+    </div>
+    <div id="upperLevelRadios" style="display:none" aria-hidden="true">
+      <input type="radio" name="wrfField" value="upper_925">
+      <input type="radio" name="wrfField" value="upper_850">
+      <input type="radio" name="wrfField" value="upper_700">
+      <input type="radio" name="wrfField" value="upper_500">
+    </div>
     <label class="option-item"><input type="radio" name="wrfField" value="rain"><span>Υετός ανά ώρα (mm)</span></label>
     <label class="option-item"><input type="radio" name="wrfField" value="rain_total"><span>ΣΥΝΟΛΙΚΟΣ ΥΕΤΟΣ (mm)</span></label>
     <div id="rainPeriodWrap" class="option-item" style="display:none;cursor:default;align-items:center;flex-wrap:wrap">
@@ -635,6 +653,7 @@ body.drawer-menu-open .legend {
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="./wrf_upper_temp.js"></script>
 <script>
 'use strict';
 
@@ -702,6 +721,46 @@ function getWRFData() {
   return null;
 }
 
+// Αποκωδικοποίηση ενός ισοβαρικού πεδίου από Base64 little-endian int16.
+function decodeUpperTemperature(levelHpa, recordIndex) {
+  const upper = window.WRF_UPPER_TEMP;
+  const encoded = upper?.levels?.[String(levelHpa)]?.[recordIndex];
+  const rows = Number(upper?.meta?.grid_rows), cols = Number(upper?.meta?.grid_cols);
+  if (!encoded || !Number.isInteger(rows) || !Number.isInteger(cols)) {
+    throw new Error(`Δεν βρέθηκαν δεδομένα ${levelHpa} hPa για το χρονικό βήμα.`);
+  }
+  const binary = atob(encoded);
+  if (binary.length !== rows * cols * 2) {
+    throw new Error(`Μη έγκυρο μέγεθος δεδομένων ${levelHpa} hPa.`);
+  }
+  const values = Array.from({length: rows}, () => new Array(cols));
+  const view = new DataView(binaryToArrayBuffer(binary));
+  const scale = Number(upper.meta.temperature_scale) || 100;
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const raw = view.getInt16((i * cols + j) * 2, true);
+      values[i][j] = raw === -32768 ? NaN : raw / scale;
+    }
+  }
+  return values;
+}
+function binaryToArrayBuffer(binary) {
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+function getUpperRecordIndex(wrfIndex, wrfTimes) {
+  const upperTimes = window.WRF_UPPER_TEMP?.times || [];
+  const target = Date.parse(wrfTimes?.[wrfIndex]);
+  if (!Number.isFinite(target) || !upperTimes.length) return -1;
+  let best = -1, delta = Infinity;
+  upperTimes.forEach((stamp, i) => {
+    const t = Date.parse(stamp), d = Math.abs(t - target);
+    if (Number.isFinite(t) && d < delta) { best = i; delta = d; }
+  });
+  return delta <= 30 * 60 * 1000 ? best : -1;
+}
+
 function getAccumulatedRain(data, index, hours) {
   const source = data?.RAIN_HOURLY || data?.RAIN;
   if (!Array.isArray(source) || !Array.isArray(source[index])) return null;
@@ -745,6 +804,8 @@ STATIONS.forEach(st => {
   stationsLayer.addLayer(marker);
 });
 
+/* Διαφάνεια θερμοκρασιακών χαρτών: 80% προεπιλογή, ανεξάρτητη από τα δεδομένα. */
+let temperatureOverlayOpacity = 0.8;
 /* ΕΛΕΓΜΕΝΗ ΟΜΑΛΗ ΠΑΡΕΜΒΟΛΗ (SMOOTH CANVAS OVERLAY) */
 class SmoothWRFOverlay {
   constructor(map) {
@@ -814,6 +875,7 @@ class SmoothWRFOverlay {
       : this.type === 'rain_total' ? getAccumulatedRain(this.data, this.index, rainHours) : field?.[this.index];
     if (this.type === 'wind') this.opacity = 0.44;
     else if (this.type === 'cloud') this.opacity = 0.72;
+    else if (this.type === 'temp') this.opacity = 0.55 * temperatureOverlayOpacity;
     else this.opacity = 0.44;
     const lat = this.data.lats;
     const lon = this.data.lons;
@@ -994,6 +1056,10 @@ const windParticles=new WindParticleLayer(map);
 /* ===== END WIND PARTICLES ===== */
 
 wrfOverlay = new SmoothWRFOverlay(map);
+const upperTempOverlay = new SmoothWRFOverlay(map);
+upperTempOverlay.canvas.style.zIndex = '651';
+upperTempOverlay.canvas.style.mixBlendMode = 'normal';
+upperTempOverlay.setVisible(false);
 const cloudOverlay = new SmoothWRFOverlay(map);
 cloudOverlay.canvas.style.zIndex = '648';
 cloudOverlay.canvas.style.mixBlendMode = 'normal';
@@ -1121,6 +1187,39 @@ function renderData(index) {
   const D = getWRFData(); if (!D) return;
   if (!Array.isArray(D.times) || !D.times.length) return;
   index = Math.max(0, Math.min(D.times.length - 1, index));
+  const selectedField = getSelectedField();
+  if (selectedField.startsWith('upper_')) {
+    const level = selectedField.slice(6);
+    const levelHpa = Number(level);
+    const recordIndex = getUpperRecordIndex(index, D.times);
+    cloudOverlay.setVisible(false);
+    wrfOverlay.setVisible(false);
+    windParticles.setData(D, index, false);
+    if (recordIndex < 0 || !Array.isArray(D.lats) || !Array.isArray(D.lons)) {
+      upperTempOverlay.setVisible(false);
+      status('Δεν υπάρχει αντίστοιχος χρόνος ή γεωγραφικό πλέγμα για τα ισοβαρικά δεδομένα.');
+    } else {
+      try {
+        const grid = decodeUpperTemperature(levelHpa, recordIndex);
+        upperTempOverlay.setData({lats: D.lats, lons: D.lons, T2: [grid]}, 'temp', 0);
+        upperTempOverlay.setVisible(true);
+        $('legendTitle').textContent = `Θερμοκρασία ${levelHpa} hPa (°C)`;
+        $('legendScale').style.background = 'linear-gradient(90deg,#313695,#3250be,#1e90ff,#00bed2,#50c878,#ffe600,#ffa500,#ff4b00,#dc143c,#800000)';
+        $('legendLabels').innerHTML = '<span>≤−5</span><span>0</span><span>10</span><span>20</span><span>30</span><span>40+</span>';
+        status(`Ισοβαρική θερμοκρασία ${levelHpa} hPa · ${window.WRF_UPPER_TEMP.times[recordIndex]}.`);
+      } catch (error) {
+        upperTempOverlay.setVisible(false);
+        status(`Σφάλμα ισοβαρικής θερμοκρασίας: ${error.message}`);
+      }
+    }
+    $('timeSlider').value = index; updateTimeSliderProgress();
+    $('timeLabel').textContent = `Βήμα ${String(index + 1).padStart(2, '0')} / ${D.times.length}`;
+    updateTimeDisplay(index, D);
+    $('prevTime').disabled = index <= 0; $('nextTime').disabled = index >= D.times.length - 1;
+    if (activeGridPoint && gridPointPanel.classList.contains('open')) updateGridPanel();
+    return;
+  }
+  upperTempOverlay.setVisible(false);
   if (magnesiaModeActive) {
     renderMagnesiaComposite(index);
     $('timeSlider').value = index; updateTimeSliderProgress();
@@ -1139,6 +1238,7 @@ function renderData(index) {
     return;
   }
   
+  wrfOverlay.setVisible(true);
   wrfOverlay.setData(D, type, index);
   windParticles.setData(D, index, type === 'wind');
   if (activeGridPoint && gridPointPanel.classList.contains('open')) updateGridPanel();
@@ -1209,6 +1309,13 @@ async function loadData() {
         setLoadingProgress(100, 'Σφάλμα: δεν βρέθηκαν χρονικά βήματα.');
         status('ΣΦΑΛΜΑ: Δεν βρέθηκαν χρόνοι στο WRF_DATA.');
         return;
+      }
+      if (!window.WRF_UPPER_TEMP || !window.WRF_UPPER_TEMP.levels) {
+        console.warn('WRF_UPPER_TEMP δεν φορτώθηκε. Έλεγξε το wrf_upper_temp.js.');
+      } else {
+        const upperTimes = window.WRF_UPPER_TEMP.times || [];
+        const overlap = D.times.filter(stamp => getUpperRecordIndex(D.times.indexOf(stamp), D.times) >= 0).length;
+        console.info(`WRF upper-air: ${overlap}/${D.times.length} χρονικά βήματα αντιστοιχούν.`);
       }
 
       $('timeSlider').max = D.times.length - 1;
@@ -1348,6 +1455,23 @@ document.querySelectorAll('input[name="wrfField"]').forEach(radio => {
     renderData(Number($('timeSlider').value));
   });
 });
+// Διακριτικός επιλογέας ισοβαρικών επιπέδων, αντί για ξεχωριστές επιλογές στο μενού.
+const upperLevelSlider = $('upperLevelSlider');
+const upperLevelValue = $('upperLevelValue');
+const upperPressureLevels = [925, 850, 700, 500];
+function selectUpperPressureLevel(index) {
+  const level = upperPressureLevels[Math.max(0, Math.min(3, Number(index) || 0))];
+  upperLevelValue.textContent = `${level} hPa`;
+  const radio = document.querySelector(`input[name="wrfField"][value="upper_${level}"]`);
+  if (radio && !radio.checked) {
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+  const pct = (Number(upperLevelSlider.value) / 3) * 100;
+  upperLevelSlider.style.background = `linear-gradient(90deg,var(--cyan) ${pct}%,rgba(111,145,168,.28) ${pct}%)`;
+}
+upperLevelSlider.addEventListener('input', e => selectUpperPressureLevel(e.target.value));
+upperLevelSlider.addEventListener('change', e => selectUpperPressureLevel(e.target.value));
 $('rainPeriod').addEventListener('change', () => {
   gridHoverTip.style.display = 'none';
   if (getSelectedField() === 'rain_total') renderData(Number($('timeSlider').value));
