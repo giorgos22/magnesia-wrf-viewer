@@ -6,13 +6,13 @@
 .summary-backdrop{display:none;position:fixed;inset:0;z-index:1000;background:#020813c9;backdrop-filter:blur(5px);padding:14px;align-items:center;justify-content:center}
 .summary-backdrop.open{display:flex}.summary-modal{width:min(920px,100%);max-height:92vh;overflow:auto;background:linear-gradient(145deg,#13263b,#091522);border:1px solid #3b5874;border-radius:18px;padding:17px;box-shadow:0 24px 80px #0009}
 .summary-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:15px}.summary-kicker{font-size:10px;letter-spacing:1.2px;color:#6edcf5;font-weight:800}.summary-head h2{font-size:21px;margin:3px 0 0;color:#f2f7ff}.summary-close{padding:7px 11px;font-size:18px;line-height:1;border-radius:10px}
-.summary-days{display:grid;grid-template-columns:1fr 1fr;gap:12px}.summary-day{background:#f8fafc;color:#1b2939;border-radius:13px;padding:13px;border:1px solid #cbd5e1;min-width:0}
+.summary-days{display:grid;grid-template-columns:1fr 1fr;gap:12px}.summary-days.three-days{grid-template-columns:repeat(3,minmax(0,1fr))}.summary-day{background:#f8fafc;color:#1b2939;border-radius:13px;padding:13px;border:1px solid #cbd5e1;min-width:0}
 .summary-day-top{display:flex;align-items:center;gap:12px;border-bottom:1px solid #d7dee7;padding-bottom:9px;margin-bottom:10px}.summary-date{font-size:38px;line-height:1;font-weight:850;color:#444}.summary-weekday{font-size:13px;font-weight:800;text-transform:uppercase}.summary-month{font-size:10px;color:#758294;font-weight:700}.summary-condition{margin-left:auto;font-size:32px}.summary-day-desc{font-size:12px;color:#59687a;margin-bottom:10px}
 .summary-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.summary-stat{background:#edf2f7;border-radius:9px;padding:8px}.summary-stat span{display:block;font-size:10px;color:#637184}.summary-stat strong{font-size:19px;color:#182d4b}.summary-stat.tempmax strong{color:#dc2626}.summary-stat.tempmin strong{color:#244d91}
 
 .model-info{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 13px}.model-info-item{background:#1b344b;border:1px solid #35536e;border-radius:10px;padding:9px 11px;min-width:0}.model-info-item span{display:block;color:#a9c2d8;font-size:10px;margin-bottom:3px}.model-info-item strong{display:block;color:#f0f7ff;font-size:13px;overflow-wrap:anywhere}.summary-stat.wind-strong strong{color:#b45309}.wind-note{font-size:11px;color:#9a5a09;font-weight:800;margin-top:7px}.wind-dir{font-size:11px;color:#536579;margin-top:4px}
-.summary-chart-wrap{margin-top:14px;background:#f8fafc;border-radius:13px;padding:12px;color:#1b2939}.summary-chart-title{font-size:13px;font-weight:800;margin-bottom:8px}.summary-timeline{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:5px;overflow:hidden}.summary-slot{text-align:center;border-left:1px solid #e2e8f0;padding:2px 1px;min-width:0}.summary-slot .slot-time{font-size:10px;color:#64748b}.summary-slot .slot-icon{font-size:20px;line-height:1.5}.summary-slot .slot-temp{font-size:12px;font-weight:800;color:#1e3a5f}.summary-temp-svg{width:100%;height:105px;display:block;margin:5px 0}.summary-temp-svg text{font:10px system-ui;fill:#64748b}.summary-foot{font-size:10px;color:#9fb2c7;margin-top:10px}
-@media(max-width:600px){.summary-backdrop{padding:7px}.summary-modal{padding:12px;max-height:94vh}.summary-head h2{font-size:17px}.summary-days{grid-template-columns:1fr}.model-info{grid-template-columns:1fr}.summary-day{padding:10px}.summary-date{font-size:33px}.summary-timeline{grid-template-columns:repeat(8,minmax(0,1fr));gap:1px}.summary-slot .slot-icon{font-size:17px}.summary-slot .slot-time{font-size:9px}.summary-slot .slot-temp{font-size:11px}}
+.summary-chart-wrap{margin-top:14px;background:#f8fafc;border-radius:13px;padding:12px;color:#1b2939}.summary-chart-title{font-size:13px;font-weight:800;margin-bottom:8px}.summary-timeline{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(56px,1fr);gap:4px;overflow-x:auto;padding-bottom:4px}.summary-slot{text-align:center;border-left:1px solid #e2e8f0;padding:2px 1px;min-width:0}.summary-slot .slot-time{font-size:10px;color:#64748b}.summary-slot .slot-icon{font-size:20px;line-height:1.5}.summary-slot .slot-temp{font-size:12px;font-weight:800;color:#1e3a5f}.summary-temp-svg{width:100%;height:105px;display:block;margin:5px 0}.summary-temp-svg text{font:10px system-ui;fill:#64748b}.summary-foot{font-size:10px;color:#9fb2c7;margin-top:10px}
+@media(max-width:760px){.summary-days.three-days{grid-template-columns:1fr}}@media(max-width:600px){.summary-backdrop{padding:7px}.summary-modal{padding:12px;max-height:94vh}.summary-head h2{font-size:17px}.summary-days,.summary-days.three-days{grid-template-columns:1fr}.model-info{grid-template-columns:1fr}.summary-day{padding:10px}.summary-date{font-size:33px}.summary-timeline{grid-auto-flow:column;grid-auto-columns:minmax(52px,1fr);gap:2px;overflow-x:auto}.summary-slot .slot-icon{font-size:17px}.summary-slot .slot-time{font-size:9px}.summary-slot .slot-temp{font-size:11px}}
 
 .selected-place{font-size:12px;color:#b9cde0;padding:5px 2px}
 .regions-backdrop{display:none;position:fixed;inset:0;z-index:1100;background:#020813d9;backdrop-filter:blur(5px);padding:12px;align-items:center;justify-content:center}
@@ -43,7 +43,7 @@
 .back-home{box-sizing:border-box;text-decoration:none;font-size:29px;font-weight:800;line-height:1;transition:background .15s,border-color .15s}
 .back-home:hover,.back-home:focus{background:linear-gradient(145deg,#185477,#142b42);border-color:#55dcff;color:#fff;outline:none}
 </style></head><body><div class="wrap">
-<header><div class="brand"><a class="logo back-home" href="./index.html" aria-label="Επιστροφή στην αρχική σελίδα χάρτη" title="Επιστροφή στην αρχική σελίδα">←</a><div><h1>MAGNESIA METEOGRAM</h1><div class="main-region" id="mainRegionName">Κωφοί Μαγνησίας</div><div class="sub">Model Tsiantos · WRF-ARW</div></div></div><div class="actions"><button id="summaryBtn">▦ Συνοπτική πρόγνωση 48ώρου</button><button id="regionsBtn">⌖ Περιοχές</button></div></header>
+<header><div class="brand"><a class="logo back-home" href="./index.html" aria-label="Επιστροφή στην αρχική σελίδα χάρτη" title="Επιστροφή στην αρχική σελίδα">←</a><div><h1>MAGNESIA METEOGRAM</h1><div class="main-region" id="mainRegionName">Κωφοί Μαγνησίας</div><div class="sub">Model Tsiantos · WRF-ARW</div></div></div><div class="actions"><button id="summaryBtn">▦ Συνοπτική πρόγνωση</button><button id="regionsBtn">⌖ Περιοχές</button></div></header>
 <div class="regions-backdrop" id="regionsBackdrop" aria-hidden="true">
  <section class="regions-modal" role="dialog" aria-modal="true" aria-labelledby="regionsTitle">
   <div class="summary-head"><div><div class="summary-kicker">WRF-ARW · ΜΑΓΝΗΣΙΑ & ΘΕΣΣΑΛΙΑ</div><h2 id="regionsTitle">Επιλογή περιοχής</h2></div><button class="summary-close" id="regionsClose" aria-label="Κλείσιμο">✕</button></div>
@@ -53,7 +53,7 @@
 </div>
 <div class="summary-backdrop" id="summaryBackdrop" aria-hidden="true">
  <section class="summary-modal" role="dialog" aria-modal="true" aria-labelledby="summaryTitle">
-  <div class="summary-head"><div><div class="summary-kicker">ΠΕΡΙΟΧΗ ΠΡΟΓΝΩΣΗΣ</div><div class="summary-region-nav"><button type="button" class="summary-region-arrow" id="summaryPrevRegion" aria-label="Προηγούμενη περιοχή" title="Προηγούμενη περιοχή">‹</button><div class="summary-region-name" id="summaryRegionName">Κωφοί Μαγνησίας</div><button type="button" class="summary-region-arrow" id="summaryNextRegion" aria-label="Επόμενη περιοχή" title="Επόμενη περιοχή">›</button></div><h2 id="summaryTitle">Συνοπτική πρόγνωση 48ώρου</h2></div><button class="summary-close" id="summaryClose" aria-label="Κλείσιμο">✕</button></div>
+  <div class="summary-head"><div><div class="summary-kicker">ΠΕΡΙΟΧΗ ΠΡΟΓΝΩΣΗΣ</div><div class="summary-region-nav"><button type="button" class="summary-region-arrow" id="summaryPrevRegion" aria-label="Προηγούμενη περιοχή" title="Προηγούμενη περιοχή">‹</button><div class="summary-region-name" id="summaryRegionName">Κωφοί Μαγνησίας</div><button type="button" class="summary-region-arrow" id="summaryNextRegion" aria-label="Επόμενη περιοχή" title="Επόμενη περιοχή">›</button></div><h2 id="summaryTitle">Συνοπτική πρόγνωση</h2></div><button class="summary-close" id="summaryClose" aria-label="Κλείσιμο">✕</button></div>
   <div class="model-info" id="modelInfo"></div>
   <div class="summary-days" id="summaryDays"></div>
   <div class="summary-chart-wrap"><div class="summary-chart-title">Εξέλιξη θερμοκρασίας και καιρού ανά 3 ώρες</div><div id="summaryTimeline"></div></div>
@@ -133,7 +133,7 @@ function loadEmbeddedWRF(){
  try{
   if(!window.WRF_DATA)throw Error('wrf_data.js δεν φορτώθηκε. Βεβαιώσου ότι βρίσκεται δίπλα στο HTML.');
   data=fromWRF(window.WRF_DATA,selectedRegion);
-  if(!data.times.length || data.times.length!==49) throw Error('Αναμένονταν 49 ωριαία WRF records, βρέθηκαν '+data.times.length);
+  if(data.times.length<2) throw Error('Απαιτούνται τουλάχιστον 2 ωριαία WRF records, βρέθηκαν '+data.times.length);
   const arrays=['temp_c','wind_ms','wind_dir_deg','rain_mm','cloud_pct','psfc_hpa','rh_pct'];
   for(const k of arrays) if(data[k].length!==data.times.length || data[k].some(v=>!Number.isFinite(Number(v)))) throw Error('Μη έγκυρες τιμές στο πεδίο '+k);
   $('timeRange').max=data.times.length-1;$('selectedPlaceLabel').innerHTML='<span class="place-caption">ΠΕΡΙΟΧΗ ΠΡΟΓΝΩΣΗΣ</span><strong>'+selectedRegion.name+'</strong>';
@@ -338,8 +338,18 @@ function makeDayCard(start,end,dayNo){
 function renderSummary(){
  $('summaryRegionName').textContent=selectedRegion.name;
  if(!data||data.times.length<2){$('summaryDays').innerHTML='<p>Δεν υπάρχουν διαθέσιμα δεδομένα WRF.</p>';return}
- const split=Math.min(24,data.times.length-1),end1=split,end2=data.times.length;
- $('summaryDays').innerHTML=makeDayCard(0,end1,1)+makeDayCard(end1,end2,2);
+ const totalHours=Math.max(1,data.times.length-1);
+ $('summaryTitle').textContent='Συνοπτική πρόγνωση '+totalHours+'ώρου';
+ const ranges=[];
+ let startIdx=0,dayNo=1;
+ while(startIdx<data.times.length-1){
+  const endIdx=Math.min(data.times.length,startIdx+24);
+  if(endIdx-startIdx>=2)ranges.push({start:startIdx,end:endIdx,dayNo:dayNo++});
+  startIdx=endIdx;
+ }
+ if(!ranges.length)ranges.push({start:0,end:data.times.length,dayNo:1});
+ $('summaryDays').classList.toggle('three-days',ranges.length>=3);
+ $('summaryDays').innerHTML=ranges.map(r=>makeDayCard(r.start,r.end,r.dayNo)).join('');
  const first=parseWRFTime(data.times[0]),last=parseWRFTime(data.times[data.times.length-1]);
  const stamp=v=>v.toLocaleString('el-GR',{timeZone:ATHENS_TZ,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
  const stampUTC=v=>v.toLocaleString('el-GR',{timeZone:'UTC',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});

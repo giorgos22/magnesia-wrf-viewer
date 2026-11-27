@@ -34,13 +34,13 @@ html, body, #map {
 
 .legend {
   position: absolute; z-index: 1001; right: 12px; left: auto;
-  top: auto; bottom: 136px;
+  top: auto; bottom: 112px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
   padding: 9px 12px; color: #fff; font-size: 11px; width: 210px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.6); backdrop-filter: blur(8px);
 }
 @media (max-width:600px) {
-  .legend { right: 10px; bottom: 132px; width: 190px; padding: 8px 10px; }
+  .legend { right: 12px; bottom: 108px; width: 190px; padding: 8px 10px; }
 }
 .legend-title { font-weight: bold; margin-bottom: 6px; color: var(--text); }
 .scale {
@@ -59,7 +59,6 @@ html, body, #map {
 }
 .drawer-toggle-btn:hover { border-color: var(--cyan); background: #303438; }
 .drawer-toggle-btn.open { right: 62px; border-color: var(--cyan); }
-/* Layer-stack icon button inspired by the supplied reference image. */
 .drawer-toggle-btn {
   background: linear-gradient(145deg, #292d31, #1d2023);
   border: 1px solid #4a5056;
@@ -151,51 +150,181 @@ html, body, #map {
 .loading-fill { width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#06b6d4,#38bdf8,#22c55e); transition: width .12s linear; }
 .loading-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; color: var(--muted); font-size: 11px; }
 .loading-meta strong { color: var(--yellow); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* ΝΕΟ ΣΥΜΠΑΓΕΣ & ΗΜΙΔΙΑΦΑΝΟ SLIDER BAR */
 .bottom-time-bar {
-  position: absolute; z-index: 1000; bottom: 18px; left: 50%; transform: translateX(-50%);
-  width: min(720px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line);
-  border-radius: 14px; padding: 10px 16px 9px; box-shadow: 0 8px 30px rgba(0,0,0,0.85); backdrop-filter: blur(10px);
-}
-.slider-row { display: flex; align-items: center; gap: 9px; }
-.step-btn {
-  background: linear-gradient(145deg,#1b2c43,#111d2e); border: 1px solid #3c5472; color: #eaf7ff; width: 27px; height: 27px;
-  border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px;
-}
-.step-btn:hover:not(:disabled) { background: #223752; border-color: var(--cyan); }
-.step-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.time-bound { font-size: 11px; color: #aebed0; font-weight: bold; min-width: 34px; text-align: center; }
-.bottom-time-bar input[type="range"] {
-  --range-progress: 50%; flex: 1; min-width: 0; appearance: none; -webkit-appearance: none;
-  height: 18px; margin: 0; padding: 0; background: transparent; cursor: pointer; outline: none;
-}
-.bottom-time-bar input[type="range"]::-webkit-slider-runnable-track {
-  height: 4px; border-radius: 99px; border: 1px solid rgba(116,151,180,.55);
-  background: linear-gradient(90deg,#16c8ed 0%,#16c8ed var(--range-progress),rgba(148,163,184,.32) var(--range-progress),rgba(148,163,184,.32) 100%);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,.45);
-}
-.bottom-time-bar input[type="range"]::-moz-range-track {
-  height: 4px; border-radius: 99px; border: 1px solid rgba(116,151,180,.55); background: rgba(148,163,184,.32);
-}
-.bottom-time-bar input[type="range"]::-moz-range-progress { height: 4px; border-radius: 99px; background: #16c8ed; }
-.bottom-time-bar input[type="range"]::-webkit-slider-thumb {
-  appearance: none; -webkit-appearance: none; width: 13px; height: 13px; margin-top: -5px;
-  border-radius: 50%; background: radial-gradient(circle at 35% 30%,#a5f3fc,#13c9ed 65%,#0891b2);
-  border: 2px solid #d8faff; box-shadow: 0 0 0 3px rgba(0,213,255,.14),0 2px 6px rgba(0,0,0,.45);
-}
-.bottom-time-bar input[type="range"]::-moz-range-thumb {
-  width: 10px; height: 10px; border-radius: 50%; background: #16c8ed; border: 2px solid #d8faff;
-  box-shadow: 0 0 0 3px rgba(0,213,255,.14),0 2px 6px rgba(0,0,0,.45);
-}
-.time-info-row { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 8px; }
-.date-highlight { font-size: 17px; font-weight: bold; color: var(--yellow); }
-.step-badge { font-size: 11px; color: var(--muted); background: rgba(255,255,255,0.07); padding: 2px 8px; border-radius: 10px; }
-.cycle-badge { font-size: 10px; color: #8fa6bd; background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.18); padding: 2px 7px; border-radius: 9px; white-space: nowrap; }
-.ticks-bar {
-  height: 6px; margin: 6px 46px 0;
-  background-image: repeating-linear-gradient(to right, rgba(148, 163, 184, 0.45) 0px, rgba(148, 163, 184, 0.45) 1px, transparent 1px, transparent 14px);
+  position: absolute; z-index: 1000; bottom: 14px; left: 50%; transform: translateX(-50%);
+  width: min(820px, calc(100vw - 24px));
+  background: rgba(11, 20, 34, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 9px 14px 8px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-/* ΔΙΟΡΘΩΣΗ: Υψηλότερο z-index για να φαίνεται ομαλά πάνω από τα tiles */
+.time-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+}
+
+.date-highlight {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f1f5f9;
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #cbd5e1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.step-badge, .cycle-badge {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #e2e8f0;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.meta-sep {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #e2e8f0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.step-btn:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: #38bdf8;
+  color: #fff;
+}
+.step-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.time-bound {
+  font-size: 10.5px;
+  color: #94a3b8;
+  font-weight: 500;
+  min-width: 32px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bottom-time-bar input[type="range"] {
+  --range-progress: 50%;
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.bottom-time-bar input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: linear-gradient(
+    90deg,
+    #38bdf8 0%,
+    #60a5fa var(--range-progress),
+    rgba(255, 255, 255, 0.78) var(--range-progress),
+    rgba(255, 255, 255, 0.78) 100%
+  );
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.bottom-time-bar input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.bottom-time-bar input[type="range"]::-moz-range-progress {
+  height: 6px;
+  border-radius: 99px;
+  background: #38bdf8;
+}
+
+.bottom-time-bar input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 17px;
+  height: 17px;
+  margin-top: -6.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #93c5fd, #2563eb 75%, #1d4ed8);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
+  transition: transform 0.1s ease;
+}
+
+.bottom-time-bar input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.12);
+}
+
+.bottom-time-bar input[type="range"]::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #2563eb;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55);
+}
+
+.time-update-row {
+  text-align: center;
+  margin-top: 5px;
+  font-size: 11px;
+  color: #cbd5e1;
+  letter-spacing: 0.15px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .time-top-row { font-size: 11.5px; }
+  .date-highlight { font-size: 11.5px; }
+  .time-meta-right, .step-badge, .cycle-badge { font-size: 10.5px; }
+  .time-bound { display: none; }
+  .time-update-row { font-size: 10.5px; }
+}
+
 .wrf-smooth-canvas { position: absolute; left: 0; top: 0; z-index: 650; pointer-events: none; mix-blend-mode: normal; }
 .wind-particles-canvas { position:absolute !important; left:0 !important; top:0 !important; z-index:850 !important; pointer-events:none !important; display:block; }
 .leaflet-control-attribution { font-size: 9px !important; background: rgba(11,20,34,0.7) !important; color: #94a3b8 !important; }
@@ -204,7 +333,6 @@ html, body, #map {
   font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; white-space: nowrap;
 }
 
-/* Grid-point interaction and forecast panel */
 .grid-hover-tip {
   position:absolute; z-index:1100; display:none; pointer-events:none;
   padding:7px 10px; border:1px solid #31516e; border-radius:8px;
@@ -220,7 +348,6 @@ html, body, #map {
   box-shadow:0 12px 38px #000b; backdrop-filter:blur(12px);
 }
 .grid-point-panel.open { display:block; }
-/* Hide the parameters/layers button while the selected-point information panel is open. */
 body.grid-point-open #drawerToggle { display:none !important; }
 .gp-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
   padding:16px 17px 12px; border-bottom:1px solid #26364d; }
@@ -279,7 +406,6 @@ body.grid-point-open #drawerToggle { display:none !important; }
   .gp-close { font-size:22px; }
 }
 
-
 .info-toggle-btn{position:absolute;z-index:1002;top:62px;right:16px;left:auto;padding:9px 13px;border:1px solid var(--line);border-radius:9px;color:#fff;background:var(--panel);font-size:12px;font-weight:bold;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.55);backdrop-filter:blur(8px)}
 .info-toggle-btn:hover{border-color:var(--cyan);color:var(--cyan)}
 .info-modal{position:absolute;z-index:2000;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(2,8,18,.72);backdrop-filter:blur(5px)}
@@ -296,8 +422,6 @@ body.grid-point-open #drawerToggle { display:none !important; }
 .info-warning{margin-top:14px;padding:11px 12px;border-left:3px solid var(--yellow);border-radius:5px;background:rgba(255,235,59,.07);color:#f8edb0}
 @media(max-width:600px){.top-brand{top:14px;right:12px;font-size:10px;padding:8px 9px;max-width:calc(100vw - 190px);white-space:nowrap}.info-body{padding:13px 15px 16px;font-size:12px}}
 
-
-/* Compact information icon under the title; never stretch across the screen. */
 @media (max-width:600px) {
   .info-toggle-btn {
     top:62px !important;
@@ -315,8 +439,6 @@ body.grid-point-open #drawerToggle { display:none !important; }
   }
 }
 
-
-/* v37: group information, Magnesia mode and parameter controls on one row */
 .info-toggle-btn {
   top: 14px !important;
   left: 232px !important;
@@ -339,21 +461,15 @@ body.grid-point-open #drawerToggle { display:none !important; }
 }
 .drawer-toggle-btn.open { left: 182px !important; right: auto !important; }
 
-
-/* v38: shift the complete top control group 3vw to the left */
 .info-toggle-btn { left: calc(232px - 3vw) !important; }
 .drawer-toggle-btn { left: calc(182px - 3vw) !important; }
 .drawer-toggle-btn.open { left: calc(182px - 3vw) !important; }
 
-
-/* v41: reserve the former status area for a future control; show no status text */
 #status,
 .status-box {
   display: none !important;
 }
 
-
-/* v46-local: το μετεώγραμμα ενσωματώνεται στο μενού παραμέτρων */
 .meteogram-menu-link{
   display:flex; align-items:center; gap:10px; min-height:43px;
   margin-top:4px; padding:9px 10px; text-decoration:none;
@@ -367,8 +483,6 @@ body.grid-point-open #drawerToggle { display:none !important; }
 .meteogram-menu-icon{font-size:18px;color:#43dcff;line-height:1}
 .meteogram-menu-arrow{margin-left:auto;font-size:22px;color:#43dcff;line-height:1}
 
-
-/* v49: mobile drawer fixes — drawer and legend are siblings of #map */
 .params-drawer {
   z-index: 1400 !important;
   max-height: calc(100dvh - 82px);
@@ -385,7 +499,6 @@ body.drawer-menu-open .legend {
   display: none !important;
 }
 @media (max-width: 600px) {
-  /* Mobile: anchor the drawer to the visible screen, not the page/map width */
   .params-drawer {
     position: fixed !important;
     box-sizing: border-box;
@@ -412,8 +525,6 @@ body.drawer-menu-open .legend {
   }
 }
 
-
-/* Special Magnesia maps accordion inside the parameters drawer. */
 .special-maps-accordion{border:1px solid rgba(0,213,255,.32);border-radius:10px;overflow:hidden;background:linear-gradient(120deg,rgba(0,213,255,.08),rgba(16,35,54,.72))}
 .special-maps-heading{width:100%;display:flex;align-items:center;gap:9px;padding:11px 10px;border:0;background:transparent;color:#e8f8ff;text-align:left;font:700 12px Arial,sans-serif;cursor:pointer}
 .special-maps-heading:hover{background:rgba(0,213,255,.08)}
@@ -424,7 +535,7 @@ body.drawer-menu-open .legend {
 .special-map-action{width:100%;display:flex;align-items:center;gap:9px;padding:10px;border:1px solid rgba(0,213,255,.25);border-radius:8px;background:rgba(11,25,42,.8);color:#e8f8ff;font:600 12px Arial,sans-serif;text-align:left;cursor:pointer}
 .special-map-action:hover,.special-map-action.active{border-color:var(--cyan);background:rgba(0,75,105,.35)}
 .special-map-action .special-map-arrow{margin-left:auto;color:var(--cyan);font-size:18px}
-/* Place search control */
+
 .place-search-toggle{position:absolute;z-index:1300;top:14px;left:calc(132px - 3vw);right:auto;width:40px;height:38px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:#eaf7ff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px #0009;backdrop-filter:blur(8px)}
 .place-search-toggle:hover,.place-search-toggle.active{border-color:var(--cyan);color:var(--cyan)}
 .place-search-toggle svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
@@ -437,14 +548,10 @@ body.drawer-menu-open .legend {
 .place-search-go:hover,.place-search-clear:hover{border-color:var(--cyan);color:var(--cyan)}
 .place-search-status{min-height:16px;margin:7px 2px 0;color:#9eb2c9;font-size:11px;line-height:1.4}
 .place-search-marker{filter:drop-shadow(0 1px 5px rgba(0,0,0,.85))}
-/* Search takes the former Magnesia shortcut position in the top control row. */
 .place-search-toggle{top:14px !important;left:calc(132px - 3vw) !important;right:auto !important;width:40px;height:38px}
 .place-search-panel{top:62px;left:calc(132px - 3vw);right:auto}
 @media(max-width:600px){.place-search-toggle{top:14px !important;left:calc(132px - 3vw) !important;right:auto !important}.place-search-panel{top:62px;left:calc(132px - 3vw);right:auto;width:min(340px,calc(100vw - 32px))}}
 
-
-
-/* v51: place the layers button on the right, directly below the WRF title. */
 .drawer-toggle-btn,
 .drawer-toggle-btn.open {
   position: fixed !important;
@@ -467,13 +574,11 @@ body.drawer-menu-open .legend {
   transform: scale(0.95);
   transform-origin: top right;
 }
-
 </style>
 </head>
 <body>
 
 <div id="map"></div>
-
 
 <section id="infoModal" class="info-modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
  <div class="info-card">
@@ -488,7 +593,7 @@ body.drawer-menu-open .legend {
    <ul><li>Θερμοκρασία στα 2 μέτρα (T2).</li><li>Υετό (RAIN).</li><li>Άνεμο στα 10 μέτρα (U10/V10), με απεικόνιση της ροής και ταχύτητα σε km/h.</li><li>Επιλογή χρονικού βήματος και ενδεικτικές τιμές σε επιλεγμένο σημείο του πλέγματος.</li><li>Υπόβαθρο ανάγλυφου COP90 ανάλυσης περίπου 90 m. Η ανάλυση αυτή αφορά το τοπογραφικό υπόβαθρο και όχι το πλέγμα του WRF.</li></ul>
    <h3>Πειραματικός χαρακτήρας – περιορισμοί</h3>
    <p>Η εφαρμογή βρίσκεται σε πειραματικό στάδιο και αναπτύσσεται για εκπαιδευτικούς, ερευνητικούς και ενημερωτικούς σκοπούς. Τα αποτελέσματα αποτελούν προσομοίωση και όχι επιβεβαιωμένη πρόγνωση. Ενδέχεται να υπάρχουν αποκλίσεις ως προς τη θέση, την ένταση ή τον χρόνο εκδήλωσης των φαινομένων. Η αξιοπιστία επηρεάζεται από τα αρχικά δεδομένα, τις παραδοχές και τους περιορισμούς του μοντέλου.</p>
-   <div class="info-warning"><strong>Σημαντικό:</strong> Να μη χρησιμοποιείται ως μοναδική πηγή για αποφάσεις ασφάλειας ή για την έκδοση προειδοποιήσεων. Για επίσημες ενημερώσεις και επικίνδυνα καιρικά φαινόμενα, να συμβουλεύεστε την ΕΜΥ και τις αρμόδιες αρχές.</div>
+   <div class="info-warning"><strong>Σημαντικό:</strong> Να μη χρησιμοποιείται ως μοναδική πηγή για αποφάσεις ασφάλειας ή για την έκδοση προειδοποιήσεων. Για επίσημες ενημερώσεις και επικίνδυνα καιρικά φαινές, να συμβουλεύεστε την ΕΜΥ και τις αρμόδιες αρχές.</div>
    <p style="margin-top:14px;color:#9aabc0;font-size:11px;">Ανεξάρτητη πειραματική προσπάθεια: Magnesia Forecast · Georgios Tsiantos</p>
   </div>
  </div>
@@ -508,7 +613,7 @@ body.drawer-menu-open .legend {
       <div class="gp-card"><div class="gp-label">Θερμοκρασία 2 m</div><div class="gp-value" id="gpTemp">--</div><div class="gp-sub" id="gpTempSub">T2</div></div>
       <div class="gp-card"><div class="gp-label" id="gpRainLabel">Υετός</div><div class="gp-value" id="gpRain">--</div><div class="gp-sub" id="gpRainSub">RAIN</div></div>
       <div class="gp-card"><div class="gp-label">Άνεμος 10 m</div><div class="gp-value" id="gpWind">—</div><div class="gp-sub" id="gpWindDir">U10 / V10</div></div>
-<div class="gp-card"><div class="gp-label">Υψόμετρο πλέγματος</div><div class="gp-value" id="gpHeight">--</div><div class="gp-sub">Μόνο εφόσον παρέχεται από τα δεδομένα</div></div>
+      <div class="gp-card"><div class="gp-label">Υψόμετρο πλέγματος</div><div class="gp-value" id="gpHeight">--</div><div class="gp-sub">Μόνο εφόσον παρέχεται από τα δεδομένα</div></div>
       <div class="gp-card"><div class="gp-label">Σχετική υγρασία</div><div class="gp-value" id="gpHumidity">—</div><div class="gp-sub">RH · %</div></div>
       <button class="gp-card gp-skew-button" id="openSkewT" type="button" disabled aria-disabled="true" title="Προσωρινά εκτός λειτουργίας"><div class="gp-label">Κατακόρυφο προφίλ</div><div class="gp-value">Skew‑T</div><div class="gp-sub">Προσωρινά εκτός λειτουργίας</div></button>
     </div>
@@ -529,7 +634,6 @@ body.drawer-menu-open .legend {
 </section>
 <button id="modelInfoToggle" class="top-brand" type="button" aria-label="Πληροφορίες μοντέλου WRF MAGNESIA 3,5 km" title="Πληροφορίες μοντέλου" aria-haspopup="dialog" aria-controls="infoModal">WRF MAGNESIA 3,5 km <span aria-hidden="true" style="font-size:15px;margin-left:6px">ⓘ</span></button>
 
-
 <button id="placeSearchToggle" class="place-search-toggle" type="button" aria-label="Αναζήτηση τοποθεσίας" title="Αναζήτηση τοποθεσίας" aria-expanded="false">
  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
 </button>
@@ -548,7 +652,6 @@ body.drawer-menu-open .legend {
   <div class="scale-labels" id="legendLabels"><span>≤0</span><span>10</span><span>20</span><span>30</span><span>35+</span></div>
 </div>
 
-
 <button id="drawerToggle" class="drawer-toggle-btn" type="button" title="Επιλογή Παραμέτρων">
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 7.8 12 12.6 21.2 7.8 12 3Z"/><path d="m2.8 12 9.2 4.8 9.2-4.8"/><path d="m2.8 16.2 9.2 4.8 9.2-4.8"/></svg>
   <span>ΠΑΡΑΜΕΤΡΟΙ</span>
@@ -561,7 +664,7 @@ body.drawer-menu-open .legend {
   </div>
   <div class="param-section">
     <div class="section-title">Μεταβλητές</div>
-    <label class="option-item"><input type="radio" name="wrfField" value="temp" checked><span>Θερμοκρασία 2m (°C)</span></label>
+    <label class="option-item"><input type="radio" name="wrfField" value="temp"><span>Θερμοκρασία 2m (°C)</span></label>
     <div class="upper-level-control" id="upperLevelControl">
       <div class="upper-level-head"><span>Θερμοκρασία καθ’ ύψος</span><strong id="upperLevelValue">925 hPa</strong></div>
       <input class="upper-level-range" id="upperLevelSlider" type="range" min="0" max="3" value="0" step="1" aria-label="Επιλογή ισοβαρικού επιπέδου θερμοκρασίας">
@@ -584,14 +687,18 @@ body.drawer-menu-open .legend {
     </div>
     <label class="option-item"><input type="radio" name="wrfField" value="wind"><span>Άνεμος 10 m (ένταση + σωματίδια)</span></label>
 
-    <div class="special-maps-accordion" id="specialMapsAccordion" style="margin-top:14px">
-      <button class="special-maps-heading" id="specialMapsToggle" type="button" aria-expanded="false" aria-controls="specialMapsContent">
+  </div>
+
+  <div class="param-section">
+    <div class="section-title">Χάρτες Μαγνησίας</div>
+    <div class="special-maps-accordion open" id="specialMapsAccordion">
+      <button class="special-maps-heading" id="specialMapsToggle" type="button" aria-expanded="true" aria-controls="specialMapsContent">
         <span aria-hidden="true">▦</span>
-        <span>Ειδικοί χάρτες Μαγνησίας</span>
+        <span>Χάρτες Μαγνησίας</span>
         <span class="special-maps-chevron" aria-hidden="true">›</span>
       </button>
       <div class="special-maps-content" id="specialMapsContent">
-        <button class="special-map-action" id="magnesiaCompositeAction" type="button" aria-pressed="false">
+        <button class="special-map-action active" id="magnesiaCompositeAction" type="button" aria-pressed="true">
           <span aria-hidden="true">☁</span>
           <span>Νεφοκάλυψη + Υετός</span>
           <span class="special-map-arrow" aria-hidden="true">›</span>
@@ -637,19 +744,26 @@ body.drawer-menu-open .legend {
 </div>
 
 <div class="bottom-time-bar">
+  <div class="time-top-row">
+    <span class="date-highlight" id="dateDisplay">Φόρτωση δεδομένων…</span>
+    <div class="time-meta-right">
+      <span class="step-badge" id="timeLabel">-- / --</span>
+      <span class="meta-sep">|</span>
+      <span class="cycle-badge" id="cycleLabel">Κύκλος --Z</span>
+    </div>
+  </div>
+
   <div class="slider-row">
-    <button id="prevTime" class="step-btn" type="button" disabled>◀</button>
+    <button id="prevTime" class="step-btn" type="button" disabled title="Προηγούμενη ώρα">◀</button>
     <span class="time-bound" id="startTimeLabel">--:--</span>
     <input id="timeSlider" type="range" min="0" max="0" value="0" step="1" disabled>
     <span class="time-bound" id="endTimeLabel">--:--</span>
-    <button id="nextTime" class="step-btn" type="button" disabled>▶</button>
+    <button id="nextTime" class="step-btn" type="button" disabled title="Επόμενη ώρα">▶</button>
   </div>
-  <div class="time-info-row">
-    <span class="date-highlight" id="dateDisplay">Φόρτωση δεδομένων…</span>
-    <span class="step-badge" id="timeLabel">-- / --</span>
-    <span class="cycle-badge" id="cycleLabel">Κύκλος --Z</span>
+
+  <div class="time-update-row" id="updateDisplay">
+    Ενημέρωση: --/--/---- • --:--
   </div>
-  <div class="ticks-bar"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -663,30 +777,24 @@ const topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/W
   maxZoom: 19, attribution: 'Tiles © Esri'
 });
 
-// OpenStreetMap δοκιμαστικό υπόβαθρο. Εναλλάσσεται με το Esri Topographic.
 const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   subdomains: 'abc',
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>'
 });
 
-// Δορυφορικό υπόβαθρο Esri World Imagery.
-// Η δορυφορική εικόνα είναι το προεπιλεγμένο υπόβαθρο.
 const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 19,
   attribution: 'Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community'
 });
 
-// Προεπιλεγμένο υπόβαθρο: Esri World Imagery.
 satellite.addTo(map);
 
-// COP90 terrain image: place above the basemap and below WRF canvas.
 map.createPane('cop90TerrainPane');
 map.getPane('cop90TerrainPane').style.zIndex = 350;
 map.getPane('cop90TerrainPane').style.pointerEvents = 'none';
 
 const cop90Bounds = [[38.45, 21.20], [40.70, 24.65]];
-// Πρακτικά όρια προβολής Μαγνησίας: η κίνηση/zoom περιορίζονται στην περιοχή.
 const MAGNESIA_BOUNDS = L.latLngBounds([[38.72, 22.18], [39.78, 23.62]]);
 const DEFAULT_VIEW = { center: [39.20, 22.80], zoom: 9.5 };
 const terrainOverlay = L.imageOverlay('./MAGNESIA_TERRAIN_SHADED.png', cop90Bounds, {
@@ -696,9 +804,6 @@ const terrainOverlay = L.imageOverlay('./MAGNESIA_TERRAIN_SHADED.png', cop90Boun
   crossOrigin: false
 }).addTo(map);
 
-// Η τεχνική σκίαση Esri αφαιρέθηκε από την έκδοση αυτή.
-
-// Γεωγραφική αναφορά πάνω από τα WRF πεδία: ακτογραμμές, όρια και ονόματα τόπων.
 map.createPane('geoReferencePane');
 map.getPane('geoReferencePane').style.zIndex = 690;
 map.getPane('geoReferencePane').style.pointerEvents = 'none';
@@ -721,7 +826,6 @@ function getWRFData() {
   return null;
 }
 
-// Αποκωδικοποίηση ενός ισοβαρικού πεδίου από Base64 little-endian int16.
 function decodeUpperTemperature(levelHpa, recordIndex) {
   const upper = window.WRF_UPPER_TEMP;
   const encoded = upper?.levels?.[String(levelHpa)]?.[recordIndex];
@@ -780,7 +884,6 @@ function getAccumulatedRain(data, index, hours) {
 
 let selectedGridPoint = null;
 function status(msg) {
-  // Απόκρυψη της τεχνικής επιβεβαίωσης τριγώνων από το μενού.
   if (typeof msg === 'string' && msg.startsWith('OK: Σχεδιάστηκαν')) {
     $('status').textContent = '';
     return;
@@ -804,9 +907,7 @@ STATIONS.forEach(st => {
   stationsLayer.addLayer(marker);
 });
 
-/* Διαφάνεια θερμοκρασιακών χαρτών: 80% προεπιλογή, ανεξάρτητη από τα δεδομένα. */
 let temperatureOverlayOpacity = 0.8;
-/* ΕΛΕΓΜΕΝΗ ΟΜΑΛΗ ΠΑΡΕΜΒΟΛΗ (SMOOTH CANVAS OVERLAY) */
 class SmoothWRFOverlay {
   constructor(map) {
     this.map = map; this.visible = true; this.opacity = 0.52; this.resolution = 1.0;
@@ -821,7 +922,6 @@ class SmoothWRFOverlay {
   
   colorFor(v) {
     const stops = this.type === 'cloud'
-      // Διαβαθμίσεις γκρι: πιο σκούρα στις αραιές νεφώσεις, φωτεινότερα λευκά στα πυκνά νέφη.
       ? [[20,[248,250,252]],[40,[239,243,247]],[60,[226,232,239]],[80,[211,219,229]],[100,[194,204,216]]]
       : this.type === 'temp'
       ? [[-5,[49,54,149]],[0,[50,80,190]],[5,[30,144,255]],[10,[0,190,210]],[15,[80,200,120]],[20,[255,230,0]],[25,[255,165,0]],[30,[255,75,0]],[35,[220,20,60]],[40,[128,0,0]]]
@@ -859,7 +959,6 @@ class SmoothWRFOverlay {
         if (!Number.isFinite(val) || (isRain && val < 0.05) || (isCloud && val < 5)) continue;
         const col = this.colorFor(val), p = (y * w + x) * 4;
         px[p] = col[0]; px[p + 1] = col[1]; px[p + 2] = col[2];
-        // Τα νέφη αποκτούν πιο συμπαγή, ορατή υφή χωρίς να κρύβουν εντελώς το ανάγλυφο.
         const cloudAlpha = 1;
         px[p + 3] = Math.round(this.opacity * 255 * cloudAlpha);
       }
@@ -920,7 +1019,6 @@ class SmoothWRFOverlay {
     }
     
     if (this.type === 'cloud') {
-      // Εξομάλυνση περιγραμμάτων νεφών: blur σε ξεχωριστό canvas ώστε να μη θολώνει ο υετός/οι ετικέτες.
       const cloudSource = document.createElement('canvas');
       cloudSource.width = w; cloudSource.height = h;
       cloudSource.getContext('2d').putImageData(img, 0, 0);
@@ -933,33 +1031,94 @@ class SmoothWRFOverlay {
       this.ctx.putImageData(img, 0, 0);
     }
 
-    // Αραιές αριθμητικές τιμές ανά 8 κόμβους, μόνο σε θερμοκρασία/υετό.
     if (this.type !== 'wind' && this.type !== 'cloud') {
       const isRainField = this.type === 'rain' || this.type === 'rain_total';
-      const step = isRainField ? 5 : 8; // Πυκνότερες ενδείξεις μόνο στους χάρτες υετού.
+      const zoom = this.map.getZoom();
+
+      // Πολύ πιο πυκνό πλέγμα στον υετό / συνολικό υετό, προσαρμοσμένο στο zoom
+      let step;
+      if (isRainField) {
+        if (zoom >= 11) step = 1;       // Κάθε σημείο πλέγματος (3.5 km)
+        else if (zoom >= 10) step = 2;  // Ανά 2 σημεία
+        else if (zoom >= 9) step = 3;   // Ανά 3 σημεία
+        else step = 4;
+      } else {
+        // Θερμοκρασία
+        if (zoom >= 11) step = 3;
+        else if (zoom >= 9.5) step = 5;
+        else step = 7;
+      }
+
+      const fontSize = isRainField ? (zoom >= 10 ? 12 : 11) : 11.5;
       this.ctx.save();
-      this.ctx.font = 'bold 12px Arial, sans-serif';
+      this.ctx.font = `700 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'middle';
+      this.ctx.lineJoin = 'round';
+
+      // Λίστα για αποφυγή επικάλυψης αριθμών
+      const placedBoxes = [];
+      const minGapX = isRainField ? 26 : 34;
+      const minGapY = isRainField ? 17 : 20;
+
       for (let i = 0; i < rows; i += step) {
         for (let j = 0; j < cols; j += step) {
           const g = grid[i]?.[j];
-          if (!g || g.x < 0 || g.y < 0 || g.x > w || g.y > h) continue;
-          if ((this.type === 'rain' || this.type === 'rain_total') && g.v < 0.1) continue;
-          const isRainLabel = this.type === 'rain' || this.type === 'rain_total';
-          const label = this.type === 'temp' ? `${g.v.toFixed(1)}°` : `${g.v.toFixed(1)}`;
-          // Χωρίς μαύρο πλαίσιο: μαύρα γράμματα με διακριτικό λευκό περίγραμμα.
-          this.ctx.font = `bold ${isRainLabel ? 14 : 12}px Arial, sans-serif`;
-          this.ctx.lineWidth = isRainLabel ? 4.2 : 3.6;
-          this.ctx.strokeStyle = 'rgba(255,255,255,.96)';
-          this.ctx.shadowColor = 'rgba(8,18,32,.72)';
-          this.ctx.shadowBlur = isRainLabel ? 3.5 : 2.5;
-          this.ctx.shadowOffsetY = 1;
-          this.ctx.strokeText(label, g.x, g.y);
-          this.ctx.fillStyle = '#101a28';
-          this.ctx.fillText(label, g.x, g.y);
-          this.ctx.shadowBlur = 0;
-          this.ctx.shadowOffsetY = 0;
+          if (!g || g.x < 14 || g.y < 14 || g.x > w - 14 || g.y > h - 14) continue;
+          if (isRainField && g.v < 0.1) continue;
+
+          // Έλεγχος αν πέφτει πάνω σε ήδη σχεδιασμένο αριθμό
+          let overlaps = false;
+          for (let k = 0; k < placedBoxes.length; k++) {
+            const b = placedBoxes[k];
+            if (Math.abs(g.x - b.x) < minGapX && Math.abs(g.y - b.y) < minGapY) {
+              overlaps = true;
+              break;
+            }
+          }
+          if (overlaps) continue;
+          placedBoxes.push({ x: g.x, y: g.y });
+
+          // Πιο καθαρή μορφοποίηση αριθμών (π.χ. 15 αντί 15.3 στα πολλά mm)
+          let label;
+          if (this.type === 'temp') {
+            label = `${g.v.toFixed(1)}°`;
+          } else {
+            label = g.v >= 10 ? `${Math.round(g.v)}` : `${g.v.toFixed(1)}`;
+          }
+
+          if (isRainField) {
+            // Κομψή ημιδιαφανής σκούρα "κάψουλα" (pill) για άψογη ανάγνωση πάνω σε χρώματα & ανάγλυφο
+            const tw = this.ctx.measureText(label).width;
+            const pw = tw + 8;
+            const ph = fontSize + 4;
+            const rx = g.x - pw / 2;
+            const ry = g.y - ph / 2;
+            const r = 4;
+
+            this.ctx.beginPath();
+            if (typeof this.ctx.roundRect === 'function') {
+              this.ctx.roundRect(rx, ry, pw, ph, r);
+            } else {
+              this.ctx.rect(rx, ry, pw, ph);
+            }
+            this.ctx.fillStyle = 'rgba(9, 17, 30, 0.68)';
+            this.ctx.fill();
+            this.ctx.lineWidth = 0.8;
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+            this.ctx.stroke();
+
+            this.ctx.fillStyle = g.v >= 10 ? '#fde047' : '#ffffff';
+            this.ctx.fillText(label, g.x, g.y + 0.5);
+          } else {
+            // Καθαρό λευκό κείμενο με σκούρο περίγραμμα (halo) για τη θερμοκρασία
+            this.ctx.lineWidth = 3.2;
+            this.ctx.strokeStyle = 'rgba(10, 18, 30, 0.88)';
+            this.ctx.strokeText(label, g.x, g.y);
+
+            this.ctx.fillStyle = '#f8fafc';
+            this.ctx.fillText(label, g.x, g.y);
+          }
         }
       }
       this.ctx.restore();
@@ -968,13 +1127,11 @@ class SmoothWRFOverlay {
   }
 }
 
-/* ===== WRF 10m WIND PARTICLES - visibility/robustness fix ===== */
+/* ===== WRF 10m WIND PARTICLES ===== */
 class WindParticleLayer {
   constructor(map) {
     this.map=map; this.data=null; this.index=0; this.enabled=false;
     this.canvas=L.DomUtil.create('canvas','wind-particles-canvas',map.getContainer());
-    // Keep the particle canvas as a direct child of the map container,
-    // above Leaflet tile/vector panes and below the viewer's UI panels.
     map.getContainer().appendChild(this.canvas);
     Object.assign(this.canvas.style,{position:'absolute',left:'0',top:'0',zIndex:'850',pointerEvents:'none',display:'block'});
     this.ctx=this.canvas.getContext('2d'); this.particles=[]; this.frame=null; this.last=0; this.grid=[];
@@ -1040,7 +1197,6 @@ class WindParticleLayer {
         const color='#102a43';
         this.ctx.beginPath();this.ctx.moveTo(p.x,p.y);this.ctx.lineTo(nx,ny);
         this.ctx.strokeStyle=color;this.ctx.globalAlpha=.96;this.ctx.lineWidth=2.8;this.ctx.stroke();
-        // Bright particle head makes even light winds visible.
         this.ctx.beginPath();this.ctx.arc(nx,ny,1.6,0,Math.PI*2);
         this.ctx.fillStyle='#071827';this.ctx.globalAlpha=.98;this.ctx.fill();
         p.x=nx;p.y=ny;p.age++;
@@ -1065,8 +1221,7 @@ cloudOverlay.canvas.style.zIndex = '648';
 cloudOverlay.canvas.style.mixBlendMode = 'normal';
 wrfOverlay.canvas.style.zIndex = '652';
 wrfOverlay.canvas.style.mixBlendMode = 'normal';
-let magnesiaModeActive = false;
-// Διατηρούμε την τελευταία κανονική μεταβλητή για επιστροφή από τον ειδικό χάρτη.
+let magnesiaModeActive = true;
 let lastRegularField = document.querySelector('input[name="wrfField"]:checked')?.value || 'temp';
 function renderMagnesiaComposite(index) {
   const D = getWRFData(); if (!D) return;
@@ -1102,7 +1257,6 @@ function setMagnesiaMode(active, restoreField = true) {
     if (selected) lastRegularField = selected.value;
   }
   magnesiaModeActive = nextActive;
-  // Ο ειδικός χάρτης είναι ξεχωριστή λειτουργία: δεν αφήνουμε κανονική μεταβλητή επιλεγμένη.
   if (magnesiaModeActive) fieldRadios.forEach(radio => { radio.checked = false; });
   else if (restoreField) {
     const fieldToRestore = fieldRadios.find(radio => radio.value === lastRegularField) || fieldRadios[0];
@@ -1113,7 +1267,6 @@ function setMagnesiaMode(active, restoreField = true) {
   if (magnesiaModeActive) {
     map.setMaxBounds(MAGNESIA_BOUNDS.pad(0.015)); map.options.maxBoundsViscosity = 1.0;
     map.setMaxZoom(14);
-    // Πιο κοντινή αρχική εστίαση στη Μαγνησία, περίπου ένα επίπεδο zoom πάνω από το fitBounds.
     map.fitBounds(MAGNESIA_BOUNDS, {padding:[12,12], animate:false});
     const magnesiaTargetZoom = Math.min(map.getZoom() + 1.0, 13.5);
     map.setMinZoom(magnesiaTargetZoom - 0.5);
@@ -1130,8 +1283,6 @@ function setMagnesiaMode(active, restoreField = true) {
 }
 
 function updateLegend(type) {
-  // Κανονική λειτουργία: αφαιρούμε το πρόσθετο υπόμνημα νεφοκάλυψης
-  // της ειδικής προβολής Μαγνησίας, ώστε να μη μένουν ανακατεμένες κλίμακες.
   const cloudLegend = $('cloudLegend');
   if (cloudLegend) cloudLegend.remove();
   if (type === 'temp') {
@@ -1154,7 +1305,6 @@ function updateLegend(type) {
   }
 }
 
-// WRF valid times are UTC; display them in Greek local time (Europe/Athens).
 function parseWRFTime(value) {
   const raw = String(value ?? '').trim();
   if (!raw) return null;
@@ -1181,6 +1331,16 @@ function updateTimeDisplay(index, D) {
   $('cycleLabel').textContent = first
     ? `Κύκλος ${String(first.getUTCHours()).padStart(2, '0')}Z`
     : 'Κύκλος --Z';
+
+  const rawUpdated = D.meta?.updated_at || D.updated_at || D.meta?.run_time;
+  const parsedUpdated = rawUpdated ? parseWRFTime(rawUpdated) : null;
+  if (parsedUpdated) {
+    $('updateDisplay').textContent = `Η ενημέρωση έγινε στις: ${athensDateTime.format(parsedUpdated).replace(',', ' •')}`;
+  } else if (rawUpdated) {
+    $('updateDisplay').textContent = `Η ενημέρωση έγινε στις: ${rawUpdated}`;
+  } else if (first) {
+    $('updateDisplay').textContent = `Η ενημέρωση έγινε στις: ${athensDateTime.format(first).replace(',', ' •')}`;
+  }
 }
 
 function renderData(index) {
@@ -1266,7 +1426,6 @@ function hideLoadingProgress() {
 async function loadData() {
   setLoadingProgress(0, 'Σύνδεση με τον διακομιστή…');
   try {
-    // Χωρίς τυχαίο query string: επιτρέπουμε στον browser να αξιοποιεί την cache.
     const response = await fetch('./wrf_data.js', { cache: 'default' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const total = Number(response.headers.get('Content-Length')) || 0;
@@ -1322,7 +1481,6 @@ async function loadData() {
       $('timeSlider').disabled = false;
       $('prevTime').disabled = false;
       $('nextTime').disabled = false;
-      // Επιλογή του πλησιέστερου διαθέσιμου WRF χρόνου στην τρέχουσα ώρα Ελλάδας.
       const nowMs = Date.now();
       let initialIndex = 0, nearestDiff = Infinity;
       D.times.forEach((stamp, i) => {
@@ -1333,6 +1491,15 @@ async function loadData() {
       });
       $('timeSlider').value = initialIndex;
       updateTimeDisplay(initialIndex, D);
+      if (magnesiaModeActive) {
+        map.setMaxBounds(MAGNESIA_BOUNDS.pad(0.015));
+        map.options.maxBoundsViscosity = 1.0;
+        map.setMaxZoom(14);
+        map.fitBounds(MAGNESIA_BOUNDS, { padding: [12, 12], animate: false });
+        const magnesiaTargetZoom = Math.min(map.getZoom() + 1.0, 13.5);
+        map.setMinZoom(magnesiaTargetZoom - 0.5);
+        map.setZoom(magnesiaTargetZoom, { animate: false });
+      }
       map.invalidateSize();
       renderData(initialIndex);
       status(`Επιτυχής φόρτωση WRF: ${D.times.length} χρονικά βήματα · ${D.CLOUD ? 'νεφοκάλυψη διαθέσιμη' : 'χωρίς CLOUD — απαιτείται το νεότερο wrf_data.js'}.`);
@@ -1369,14 +1536,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') infoModal.cl
 
 $('drawerToggle').addEventListener('click', () => toggleDrawer());
 $('drawerClose').addEventListener('click', () => toggleDrawer(false));
-toggleDrawer(false); // Το μενού ξεκινά πάντα κλειστό, και σε κινητά.
+toggleDrawer(false);
 $('magnesiaCompositeAction').addEventListener('click', () => setMagnesiaMode(!magnesiaModeActive));
 $('specialMapsToggle').addEventListener('click', () => {
   const accordion = $('specialMapsAccordion');
   const expanded = accordion.classList.toggle('open');
   $('specialMapsToggle').setAttribute('aria-expanded', String(expanded));
 });
-
 
 /* ===== GEOGRAPHIC PLACE SEARCH ===== */
 let placeSearchMarker = null;
@@ -1414,7 +1580,6 @@ async function searchPlace(){
     if(!Number.isFinite(lat)||!Number.isFinite(lon)) throw new Error('Μη έγκυρες συντεταγμένες.');
     const label = (result.name || query) + (result.address?.county ? ', '+result.address.county : result.address?.state ? ', '+result.address.state : '');
     if(placeSearchMarker) map.removeLayer(placeSearchMarker);
-    // Απενεργοποιούμε προσωρινά τα όρια της λειτουργίας Μαγνησίας όταν ο στόχος είναι εκτός περιοχής.
     if(magnesiaModeActive && !MAGNESIA_BOUNDS.contains([lat,lon])){
       map.setMaxBounds(null); map.options.maxBoundsViscosity=0; map.setMinZoom(0);
     }
@@ -1439,8 +1604,6 @@ $('placeSearchClear').addEventListener('click',()=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closePlaceSearch();});
 
-
-
 $('timeSlider').addEventListener('input', e => { gridHoverTip.style.display = 'none'; renderData(Number(e.target.value)); });
 function updateTimeSliderProgress() { const el = $('timeSlider'); const max = Number(el.max) || 0; const value = Number(el.value) || 0; el.style.setProperty('--range-progress', (max ? value / max * 100 : 0) + '%'); }
 $('timeSlider').addEventListener('input', updateTimeSliderProgress);
@@ -1448,14 +1611,12 @@ updateTimeSliderProgress();
 document.querySelectorAll('input[name="wrfField"]').forEach(radio => {
   radio.addEventListener('change', () => {
     gridHoverTip.style.display = 'none';
-    // Επιλογή κανονικής μεταβλητής κλείνει αυτόματα τον ειδικό χάρτη Μαγνησίας.
     lastRegularField = radio.value;
     if (magnesiaModeActive) setMagnesiaMode(false, false);
     $('rainPeriodWrap').style.display = getSelectedField() === 'rain_total' ? 'flex' : 'none';
     renderData(Number($('timeSlider').value));
   });
 });
-// Διακριτικός επιλογέας ισοβαρικών επιπέδων, αντί για ξεχωριστές επιλογές στο μενού.
 const upperLevelSlider = $('upperLevelSlider');
 const upperLevelValue = $('upperLevelValue');
 const upperPressureLevels = [925, 850, 700, 500];
@@ -1499,7 +1660,6 @@ $('satelliteToggle').addEventListener('change', e => {
 });
 $('geoReferenceToggle').addEventListener('change', e => e.target.checked ? geoReference.addTo(map) : map.removeLayer(geoReference));
 $('wrfToggle').addEventListener('change', e => { wrfOverlay.setVisible(e.target.checked); if (!e.target.checked) windParticles.setData(getWRFData(), Number($('timeSlider').value), false); else if (getSelectedField() === 'wind') windParticles.setData(getWRFData(), Number($('timeSlider').value), true); });
-// Το δίκτυο σταθμών ΕΑΑ ανοίγει στον επίσημο χάρτη του meteo.gr μέσω του συνδέσμου στο μενού.
 
 function changeTime(delta) {
   const slider = $('timeSlider');
@@ -1514,7 +1674,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') changeTime(1);
 });
 
-
 /* ===== GRID POINT AUTO-HOVER PANEL ===== */
 const gridHoverTip = $('gridHoverTip');
 const gridPointPanel = $('gridPointPanel');
@@ -1522,8 +1681,6 @@ let activeGridPoint = null;
 let hoverFramePending = false;
 let pendingMouseEvent = null;
 
-/* Find the closest WRF grid node to the pointer, without a distance threshold.
-   The pointer can be anywhere inside the map: the nearest node is always selected. */
 function nearestGridPoint(containerPoint) {
   const D = getWRFData();
   if (!D || !Array.isArray(D.lats) || !Array.isArray(D.lons)) return null;
@@ -1723,7 +1880,6 @@ function drawSkewTemplate() {
     return;
   }
 
-  // Ενιαία records και ταξινόμηση από τη μεγαλύτερη πίεση (επιφάνεια) προς τη μικρότερη (ανώτερα στρώματα).
   const levels = pressure.map((p,i)=>({
     p:Number(p), t:Number(temperature[i]), q:Number(qvapor[i]),
     z:Array.isArray(heights) ? Number(heights[i]) : NaN
@@ -1737,11 +1893,9 @@ function drawSkewTemplate() {
 
   const l=43, r=34, t=25, b=30, pw=w-l-r, ph=h-t-b;
   const pBottom=1000, pTop=50, tMin=-80, tMax=40;
-  // Σωστός προσανατολισμός: 1000 hPa κάτω, 50 hPa πάνω.
   const yP = p => t + (Math.log(pBottom)-Math.log(p))/(Math.log(pBottom)-Math.log(pTop))*ph;
   const xT = (temp,p) => l + ((temp-tMin)/(tMax-tMin))*pw + 0.18*pw*(Math.log(pBottom/p)/Math.log(pBottom/pTop));
 
-  // Ισοβαρείς και αριθμητικές ενδείξεις πίεσης.
   ctx.lineWidth=1; ctx.strokeStyle='rgba(148,163,184,.30)';
   [1000,900,800,700,600,500,400,300,200,150,100,70,50].forEach(p=>{
     const y=yP(p);
@@ -1750,7 +1904,6 @@ function drawSkewTemplate() {
     ctx.fillText(String(p),l-5,y+3);
   });
 
-  // Ισόθερμες Skew-T.
   for(let temp=-80;temp<=40;temp+=10){
     ctx.beginPath();ctx.strokeStyle='rgba(148,163,184,.18)';
     ctx.moveTo(xT(temp,pBottom),yP(pBottom));
@@ -1759,7 +1912,6 @@ function drawSkewTemplate() {
     ctx.fillText(`${temp}°`,xT(temp,pBottom),h-9);
   }
 
-  // Ύψος MSL στη δεξιά πλευρά, με παρεμβολή ως προς log(p).
   if (levels.some(v=>Number.isFinite(v.z))) {
     [1000,850,700,500,300,200,100].forEach(p=>{
       const candidates=levels.filter(v=>Number.isFinite(v.z)).sort((a,b)=>b.p-a.p);
@@ -1778,7 +1930,6 @@ function drawSkewTemplate() {
     });
   }
 
-  // WRF QVAPOR είναι mixing ratio (g/kg): μετατροπή σε vapor pressure και Td.
   const dewpoints = levels.map(v=>{
     if(v.q<=0) return null;
     const mixingRatio=v.q/1000;
@@ -1854,7 +2005,7 @@ function updateGridPanel() {
   if (humidity === null) {
     const q2 = valueAtGrid(D?.Q2, index, activeGridPoint);
     let psfc = valueAtGrid(D?.PSFC, index, activeGridPoint);
-    if (psfc !== null && psfc < 2000) psfc *= 100; // hPa -> Pa if needed
+    if (psfc !== null && psfc < 2000) psfc *= 100;
     if (q2 !== null && psfc !== null && temp !== null && q2 > 0 && psfc > 0) {
       const e = (q2 * psfc) / (0.622 + 0.378 * q2);
       const tc = temp;
@@ -1887,10 +2038,6 @@ $('gpClose').addEventListener('click', () => {
   document.body.classList.remove('grid-point-open');
 });
 
-/* Κλείσιμο του πάνελ όταν ο χρήστης πατήσει έξω από αυτό.
-   Το πάτημα στον χάρτη συνεχίζει κανονικά προς το Leaflet:
-   το map click επιλέγει το νέο grid point και ανοίγει το πάνελ
-   με τα δεδομένα της νέας περιοχής. */
 document.addEventListener('pointerdown', e => {
   if (!gridPointPanel.classList.contains('open')) return;
   if (gridPointPanel.contains(e.target)) return;
@@ -1898,7 +2045,6 @@ document.addEventListener('pointerdown', e => {
   document.body.classList.remove('grid-point-open');
 }, true);
 
-/* Το κοντινότερο grid point επιλέγεται σε κάθε πάτημα στον χάρτη. */
 map.on('click', e => {
   const point = nearestGridPoint(e.containerPoint);
   if (point) openGridPanel(point);
@@ -1916,7 +2062,6 @@ map.on('mouseout', () => { gridHoverTip.style.display = 'none'; });
 map.on('move zoom', () => { gridHoverTip.style.display = 'none'; });
 /* ===== END GRID POINT AUTO-HOVER PANEL ===== */
 
-// Το έγχρωμο COP90 υπόβαθρο δεν ενεργοποιείται στην προεπιλεγμένη προβολή.
 terrainOverlay.on('error', () => status('Δεν βρέθηκε το MAGNESIA_TERRAIN_SHADED.png δίπλα στο HTML.'));
 loadData();
 </script>
