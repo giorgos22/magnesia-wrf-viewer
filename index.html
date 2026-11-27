@@ -686,6 +686,9 @@ body.drawer-menu-open .legend {
       </select>
     </div>
     <label class="option-item"><input type="radio" name="wrfField" value="wind"><span>Άνεμος 10 m (ένταση + σωματίδια)</span></label>
+    <label class="option-item"><input type="radio" name="wrfField" value="snow"><span>Χιονόπτωση ανά ώρα (cm/h)</span></label>
+    <label class="option-item"><input type="radio" name="wrfField" value="snow_total"><span>Συνολική χιονόπτωση (cm)</span></label>
+    <label class="option-item"><input type="radio" name="wrfField" value="freezing_level"><span>Επίπεδο παγοποίησης 0°C (m)</span></label>
 
   </div>
 
@@ -768,6 +771,7 @@ body.drawer-menu-open .legend {
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="./wrf_upper_temp.js"></script>
+<script src="./wrf_data_snow.js"></script>
 <script>
 'use strict';
 
@@ -865,6 +869,96 @@ function getUpperRecordIndex(wrfIndex, wrfTimes) {
   return delta <= 30 * 60 * 1000 ? best : -1;
 }
 
+function getSnowData() {
+  if (window.WRF_SNOW_DATA) return window.WRF_SNOW_DATA;
+  try { if (typeof WRF_SNOW_DATA !== 'undefined') return WRF_SNOW_DATA; } catch (e) {}
+  return null;
+}
+
+function getSnowRecordIndex(wrfIndex, wrfTimes) {
+  const S = getSnowData();
+  const snowTimes = S?.times || [];
+  if (!snowTimes.length) return -1;
+  if (snowTimes[wrfIndex] === wrfTimes?.[wrfIndex]) return wrfIndex;
+  const target = Date.parse(wrfTimes?.[wrfIndex]);
+  if (!Number.isFinite(target)) return -1;
+  let best = -1, delta = Infinity;
+  snowTimes.forEach((stamp, i) => {
+    const t = Date.parse(stamp), d = Math.abs(t - target);
+    if (Number.isFinite(t) && d < delta) { best = i; delta = d; }
+  });
+  return delta <= 30 * 60 * 1000 ? best : -1;
+}
+
+/*
+ * Φυσική χιονόπτωσης WRF:
+ * Συνδυάζει το μικροφυσικό πεδίο χιονιού (SNOW_FALL_HOURLY_CM / SNOW_HOURLY_MM)
+ * με θερμοδυναμικό έλεγχο υψομέτρου & επιπέδου παγοποίησης (FREEZING_LEVEL_M / T2 / HGT):
+ * - Όταν η θερμοκρασία επιφάνειας T2 > 2.5°C ΚΑΙ το υψόμετρο πλέγματος (HGT)
+ *   βρίσκεται > 350 m κάτω από το επίπεδο παγοποίησης 0°C (FZL), η νιφάδα έχει λιώσει
+ *   πλήρως σε βροχή και το πεδίο μηδενίζεται φυσικά.
+ * - Στη ζώνη τήξης (0°C έως +2.2°C ή 0–350 m κάτω από το FZL) εφαρμόζεται ομαλή
+ *   απόσβεση (melting layer attenuation) ανάλογη της λανθάνουσας θερμότητας τήξης.
+ */
+function getPhysicsFilteredSnowFrame(S, D, snowIdx, wrfIdx, mode) {
+  if (!S) return null;
+  const rawField = mode === 'snow_total'
+    ? (S.SNOW_FALL_ACC_CM || S.SNOW_ACC_MM)
+    : (S.SNOW_FALL_HOURLY_CM || S.SNOW_HOURLY_MM);
+  const frame = rawField?.[snowIdx];
+  if (!Array.isArray(frame)) return null;
+
+  const t2Frame = S.T2?.[snowIdx] || D?.T2?.[wrfIdx];
+  const fzlFrame = S.FREEZING_LEVEL_M?.[snowIdx];
+  const hgtGrid = S.HGT || D?.HGT;
+
+  const rows = frame.length;
+  const cols = frame[0]?.length || 0;
+  const out = Array.from({ length: rows }, () => new Array(cols).fill(0));
+
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      let val = Number(frame[i]?.[j]);
+      if (!Number.isFinite(val) || val <= 0) {
+        out[i][j] = 0;
+        continue;
+      }
+
+      if (mode === 'snow') {
+        const t2 = Number(t2Frame?.[i]?.[j]);
+        const fzl = Number(fzlFrame?.[i]?.[j]);
+        const hgt = Number(hgtGrid?.[i]?.[j]);
+
+        // 1. Έλεγχος ισόθερμης τήξης (Melting Layer: HGT vs Freezing Level 0°C)
+        let altFactor = 1.0;
+        if (Number.isFinite(fzl) && Number.isFinite(hgt)) {
+          const depthBelowZero = fzl - hgt; // θετικό = κάτω από το 0°C
+          if (depthBelowZero > 400) {
+            altFactor = 0.0; // >400 m κάτω από τα 0°C -> πλήρης τήξη σε βροχή
+          } else if (depthBelowZero > 120) {
+            altFactor = Math.max(0, 1 - (depthBelowZero - 120) / 280);
+          }
+        }
+
+        // 2. Έλεγχος επιφανειακής θερμοκρασίας T2 (Wet/Dry snow threshold)
+        let tempFactor = 1.0;
+        if (Number.isFinite(t2)) {
+          if (t2 > 2.4) tempFactor = 0.0;
+          else if (t2 > 0.2) tempFactor = Math.max(0, 1 - (t2 - 0.2) / 2.2);
+        }
+
+        // Συνδυασμός μικροφυσικής & θερμοδυναμικής οριακού στρώματος
+        const physWeight = (Number.isFinite(fzl) && Number.isFinite(hgt))
+          ? Math.min(1.0, 0.35 * altFactor + 0.65 * tempFactor)
+          : tempFactor;
+        val = val * (physWeight < 0.08 ? 0 : physWeight);
+      }
+      out[i][j] = val;
+    }
+  }
+  return out;
+}
+
 function getAccumulatedRain(data, index, hours) {
   const source = data?.RAIN_HOURLY || data?.RAIN;
   if (!Array.isArray(source) || !Array.isArray(source[index])) return null;
@@ -925,6 +1019,12 @@ class SmoothWRFOverlay {
       ? [[20,[248,250,252]],[40,[239,243,247]],[60,[226,232,239]],[80,[211,219,229]],[100,[194,204,216]]]
       : this.type === 'temp'
       ? [[-5,[49,54,149]],[0,[50,80,190]],[5,[30,144,255]],[10,[0,190,210]],[15,[80,200,120]],[20,[255,230,0]],[25,[255,165,0]],[30,[255,75,0]],[35,[220,20,60]],[40,[128,0,0]]]
+      : this.type === 'snow'
+        ? [[0.1,[224,242,254]],[0.5,[125,211,252]],[1.5,[56,189,248]],[3,[129,140,248]],[6,[168,85,247]],[10,[217,70,239]],[18,[244,63,94]]]
+      : this.type === 'snow_total'
+        ? [[0.5,[224,242,254]],[2,[125,211,252]],[5,[56,189,248]],[12,[129,140,248]],[25,[168,85,247]],[45,[217,70,239]],[80,[244,63,94]]]
+      : this.type === 'freezing_level'
+        ? [[0,[126,34,206]],[300,[59,130,246]],[600,[6,182,212]],[900,[16,185,129]],[1300,[234,179,8]],[1800,[249,115,22]],[2500,[220,38,38]]]
       : this.type === 'wind'
         ? [[0,[226,232,240]],[7.2,[125,211,252]],[14.4,[56,189,248]],[21.6,[34,197,94]],[28.8,[250,204,21]],[36,[249,115,22]],[54,[220,38,38]],[72,[126,34,206]]]
         : [[0.1,[219,234,254]],[0.5,[147,197,253]],[1,[56,189,248]],[2.5,[34,197,94]],[5,[234,179,8]],[10,[249,115,22]],[20,[220,38,38]],[40,[126,34,206]]];
@@ -946,6 +1046,7 @@ class SmoothWRFOverlay {
     const y0 = Math.max(0, Math.floor(Math.min(a.y, b.y, c.y))), y1 = Math.min(h - 1, Math.ceil(Math.max(a.y, b.y, c.y)));
     const inv = 1 / den, px = img.data;
     const isRain = this.type === 'rain' || this.type === 'rain_total';
+    const isSnow = this.type === 'snow' || this.type === 'snow_total';
     const isCloud = this.type === 'cloud';
     
     for (let y = y0; y <= y1; y++) {
@@ -956,7 +1057,7 @@ class SmoothWRFOverlay {
         const wc = 1 - wa - wb;
         if (wa < -.002 || wb < -.002 || wc < -.002) continue;
         const val = wa * a.v + wb * b.v + wc * c.v;
-        if (!Number.isFinite(val) || (isRain && val < 0.05) || (isCloud && val < 5)) continue;
+        if (!Number.isFinite(val) || (isRain && val < 0.05) || (isSnow && val < 0.08) || (isCloud && val < 5)) continue;
         const col = this.colorFor(val), p = (y * w + x) * 4;
         px[p] = col[0]; px[p + 1] = col[1]; px[p + 2] = col[2];
         const cloudAlpha = 1;
@@ -968,13 +1069,18 @@ class SmoothWRFOverlay {
   draw() {
     if (!this.visible || !this.data) return;
     const rainHours = Number($('rainPeriod')?.value || 24);
-    const field = this.type === 'temp' ? this.data.T2 : this.type === 'rain' ? (this.data.RAIN_HOURLY || this.data.RAIN) : this.type === 'cloud' ? this.data.CLOUD : null;
+    const field = this.type === 'temp' ? this.data.T2
+      : this.type === 'rain' ? (this.data.RAIN_HOURLY || this.data.RAIN)
+      : this.type === 'cloud' ? this.data.CLOUD
+      : (this.type === 'snow' || this.type === 'snow_total' || this.type === 'freezing_level') ? this.data.CUSTOM_FIELD
+      : null;
     const vals = this.type === 'wind'
       ? (this.data.U10?.[this.index] || []).map((row, i) => row.map((u, j) => Math.hypot(Number(u), Number(this.data.V10?.[this.index]?.[i]?.[j])) * 3.6))
       : this.type === 'rain_total' ? getAccumulatedRain(this.data, this.index, rainHours) : field?.[this.index];
     if (this.type === 'wind') this.opacity = 0.44;
     else if (this.type === 'cloud') this.opacity = 0.72;
-    else if (this.type === 'temp') this.opacity = 0.55 * temperatureOverlayOpacity;
+    else if (this.type === 'temp' || this.type === 'freezing_level') this.opacity = 0.55 * temperatureOverlayOpacity;
+    else if (this.type === 'snow' || this.type === 'snow_total') this.opacity = 0.62;
     else this.opacity = 0.44;
     const lat = this.data.lats;
     const lon = this.data.lons;
@@ -1032,24 +1138,25 @@ class SmoothWRFOverlay {
     }
 
     if (this.type !== 'wind' && this.type !== 'cloud') {
-      const isRainField = this.type === 'rain' || this.type === 'rain_total';
+      const isPrecipField = this.type === 'rain' || this.type === 'rain_total' || this.type === 'snow' || this.type === 'snow_total';
+      const isFzlField = this.type === 'freezing_level';
       const zoom = this.map.getZoom();
 
-      // Πολύ πιο πυκνό πλέγμα στον υετό / συνολικό υετό, προσαρμοσμένο στο zoom
+      // Πολύ πιο πυκνό πλέγμα στον υετό / χιονόπτωση, προσαρμοσμένο στο zoom
       let step;
-      if (isRainField) {
+      if (isPrecipField) {
         if (zoom >= 11) step = 1;       // Κάθε σημείο πλέγματος (3.5 km)
         else if (zoom >= 10) step = 2;  // Ανά 2 σημεία
         else if (zoom >= 9) step = 3;   // Ανά 3 σημεία
         else step = 4;
       } else {
-        // Θερμοκρασία
+        // Θερμοκρασία & Επίπεδο παγοποίησης
         if (zoom >= 11) step = 3;
         else if (zoom >= 9.5) step = 5;
         else step = 7;
       }
 
-      const fontSize = isRainField ? (zoom >= 10 ? 12 : 11) : 11.5;
+      const fontSize = isPrecipField ? (zoom >= 10 ? 12 : 11) : 11.5;
       this.ctx.save();
       this.ctx.font = `700 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
       this.ctx.textAlign = 'center';
@@ -1058,14 +1165,14 @@ class SmoothWRFOverlay {
 
       // Λίστα για αποφυγή επικάλυψης αριθμών
       const placedBoxes = [];
-      const minGapX = isRainField ? 26 : 34;
-      const minGapY = isRainField ? 17 : 20;
+      const minGapX = isPrecipField ? 26 : 38;
+      const minGapY = isPrecipField ? 17 : 20;
 
       for (let i = 0; i < rows; i += step) {
         for (let j = 0; j < cols; j += step) {
           const g = grid[i]?.[j];
           if (!g || g.x < 14 || g.y < 14 || g.x > w - 14 || g.y > h - 14) continue;
-          if (isRainField && g.v < 0.1) continue;
+          if (isPrecipField && g.v < 0.1) continue;
 
           // Έλεγχος αν πέφτει πάνω σε ήδη σχεδιασμένο αριθμό
           let overlaps = false;
@@ -1079,15 +1186,16 @@ class SmoothWRFOverlay {
           if (overlaps) continue;
           placedBoxes.push({ x: g.x, y: g.y });
 
-          // Πιο καθαρή μορφοποίηση αριθμών (π.χ. 15 αντί 15.3 στα πολλά mm)
           let label;
           if (this.type === 'temp') {
             label = `${g.v.toFixed(1)}°`;
+          } else if (isFzlField) {
+            label = `${Math.round(g.v)}m`;
           } else {
             label = g.v >= 10 ? `${Math.round(g.v)}` : `${g.v.toFixed(1)}`;
           }
 
-          if (isRainField) {
+          if (isPrecipField) {
             // Κομψή ημιδιαφανής σκούρα "κάψουλα" (pill) για άψογη ανάγνωση πάνω σε χρώματα & ανάγλυφο
             const tw = this.ctx.measureText(label).width;
             const pw = tw + 8;
@@ -1298,6 +1406,18 @@ function updateLegend(type) {
     $('legendTitle').textContent = `Συνολικός υετός ${hours} ωρών (mm)`;
     $('legendScale').style.background = 'linear-gradient(90deg,#dbeafe,#93c5fd,#38bdf8,#22c55e,#eab308,#f97316,#dc2626)';
     $('legendLabels').innerHTML = '<span>0.1</span><span>1</span><span>5</span><span>10</span><span>20+</span>';
+  } else if (type === 'snow') {
+    $('legendTitle').textContent = 'Χιονόπτωση ανά ώρα (cm/h)';
+    $('legendScale').style.background = 'linear-gradient(90deg,#e0f2fe,#7dd3fc,#38bdf8,#818cf8,#a855f7,#d946ef,#f43f5e)';
+    $('legendLabels').innerHTML = '<span>0.1</span><span>0.5</span><span>1.5</span><span>3</span><span>6</span><span>10</span><span>18+</span>';
+  } else if (type === 'snow_total') {
+    $('legendTitle').textContent = 'Συνολική χιονόπτωση (cm)';
+    $('legendScale').style.background = 'linear-gradient(90deg,#e0f2fe,#7dd3fc,#38bdf8,#818cf8,#a855f7,#d946ef,#f43f5e)';
+    $('legendLabels').innerHTML = '<span>0.5</span><span>2</span><span>5</span><span>12</span><span>25</span><span>45</span><span>80+</span>';
+  } else if (type === 'freezing_level') {
+    $('legendTitle').textContent = 'Επίπεδο παγοποίησης 0°C (m MSL)';
+    $('legendScale').style.background = 'linear-gradient(90deg,#7e22ce,#3b82f6,#06b6d4,#10b981,#eab308,#f97316,#dc2626)';
+    $('legendLabels').innerHTML = '<span>0m</span><span>300</span><span>600</span><span>900</span><span>1300</span><span>1800</span><span>2500+</span>';
   } else {
     $('legendTitle').textContent = 'Ένταση ανέμου 10 m (km/h)';
     $('legendScale').style.background = 'linear-gradient(90deg,#e2e8f0,#7dd3fc,#38bdf8,#22c55e,#facc15,#f97316,#dc2626,#7e22ce)';
@@ -1391,6 +1511,38 @@ function renderData(index) {
   }
   cloudOverlay.setVisible(false);
   const type = getSelectedField();
+
+  if (type === 'snow' || type === 'snow_total' || type === 'freezing_level') {
+    const S = getSnowData();
+    const snowIdx = getSnowRecordIndex(index, D.times);
+    windParticles.setData(D, index, false);
+    if (!S || snowIdx < 0) {
+      wrfOverlay.setVisible(false);
+      status('Δεν βρέθηκε το wrf_data_snow.js ή δεν υπάρχει αντίστοιχο χρονικό βήμα.');
+    } else {
+      const snowGrid = type === 'freezing_level'
+        ? S.FREEZING_LEVEL_M?.[snowIdx]
+        : getPhysicsFilteredSnowFrame(S, D, snowIdx, index, type);
+      if (!Array.isArray(snowGrid)) {
+        wrfOverlay.setVisible(false);
+        status(`Λείπει το πεδίο ${type} από το wrf_data_snow.js.`);
+      } else {
+        const lats = S.lats || D.lats;
+        const lons = S.lons || D.lons;
+        wrfOverlay.setVisible(true);
+        wrfOverlay.setData({ lats, lons, CUSTOM_FIELD: [snowGrid] }, type, 0);
+        updateLegend(type);
+      }
+    }
+    if (activeGridPoint && gridPointPanel.classList.contains('open')) updateGridPanel();
+    $('timeSlider').value = index; updateTimeSliderProgress();
+    $('timeLabel').textContent = `Βήμα ${String(index + 1).padStart(2, '0')} / ${D.times.length}`;
+    updateTimeDisplay(index, D);
+    $('prevTime').disabled = index <= 0;
+    $('nextTime').disabled = index >= D.times.length - 1;
+    return;
+  }
+
   const field = type === 'temp' ? D.T2 : (type === 'rain' || type === 'rain_total') ? (D.RAIN_HOURLY || D.RAIN) : D.U10;
   
   if (!Array.isArray(field?.[index])) {
@@ -1754,6 +1906,28 @@ function getHoverReadout(point) {
       const dirs = ['Β','ΒΑ','Α','ΝΑ','Ν','ΝΔ','Δ','ΒΔ'];
       extra = `Διεύθυνση: ${dirs[Math.round(deg / 45) % 8]}`;
     }
+  } else if (field === 'snow' || field === 'snow_total' || field === 'freezing_level') {
+    const S = getSnowData();
+    const snowIdx = getSnowRecordIndex(index, D.times);
+    if (S && snowIdx >= 0) {
+      const fzl = valueAtGrid(S.FREEZING_LEVEL_M, snowIdx, point);
+      const snowLine = valueAtGrid(S.SNOW_LEVEL_EST_M, snowIdx, point);
+      if (field === 'freezing_level') {
+        label = 'Επίπεδο παγοποίησης (0°C)';
+        value = fzl;
+        unit = 'm MSL';
+        digits = 0;
+        if (snowLine !== null) extra = `Υψόμετρο χιονόπτωσης: ~${Math.round(snowLine)} m`;
+      } else {
+        const frame = getPhysicsFilteredSnowFrame(S, D, snowIdx, index, field);
+        const rawVal = Number(frame?.[point.i]?.[point.j]);
+        value = Number.isFinite(rawVal) ? rawVal : null;
+        label = field === 'snow' ? 'Χιονόπτωση ανά ώρα' : 'Συνολική χιονόπτωση';
+        unit = field === 'snow' ? 'cm/h' : 'cm';
+        digits = field === 'snow' ? 2 : 1;
+        if (fzl !== null) extra = `0°C στα ${Math.round(fzl)} m (χιόνι ~${Math.round(snowLine ?? Math.max(0, fzl - 250))} m)`;
+      }
+    }
   }
   return { title: label, lines: [`${formatValue(value, digits)} ${unit}`].concat(extra ? [extra] : []) };
 }
@@ -1988,6 +2162,50 @@ function updateGridPanel() {
     rain = Number.isFinite(Number(pointValue)) ? Number(pointValue) : null;
     $('gpRainLabel').textContent = 'Συνολικός υετός';
     $('gpRainSub').textContent = `Συσσώρευση ${rainHours} ωρών · mm`;
+  } else if (selectedField === 'snow' || selectedField === 'snow_total' || selectedField === 'freezing_level') {
+    const S = getSnowData();
+    const snowIdx = getSnowRecordIndex(index, D?.times);
+    const fzl = (S && snowIdx >= 0) ? valueAtGrid(S.FREEZING_LEVEL_M, snowIdx, activeGridPoint) : null;
+    if (selectedField === 'freezing_level') {
+      $('gpRainLabel').textContent = 'Επίπεδο 0°C (FZL)';
+      $('gpRain').innerHTML = fzl === null ? '—' : `${Math.round(fzl)}<span class="gp-unit"> m</span>`;
+      $('gpRainSub').textContent = fzl === null ? 'WRF_SNOW_DATA' : `Χιόνι από ~${Math.round(Math.max(0, fzl - 250))} m`;
+    } else {
+      const frame = (S && snowIdx >= 0) ? getPhysicsFilteredSnowFrame(S, D, snowIdx, index, selectedField) : null;
+      const sv = Number(frame?.[activeGridPoint.i]?.[activeGridPoint.j]);
+      const snowVal = Number.isFinite(sv) ? sv : null;
+      $('gpRainLabel').textContent = selectedField === 'snow' ? 'Χιονόπτωση / ώρα' : 'Συνολικό χιόνι';
+      $('gpRain').innerHTML = `${formatValue(snowVal, selectedField === 'snow' ? 2 : 1)}<span class="gp-unit"> cm</span>`;
+      $('gpRainSub').textContent = fzl === null ? 'wrf_data_snow.js' : `0°C στα ${Math.round(fzl)} m MSL`;
+    }
+    const u10 = valueAtGrid(D?.U10, index, activeGridPoint);
+    const v10 = valueAtGrid(D?.V10, index, activeGridPoint);
+    const windSpeed = u10 === null || v10 === null ? null : Math.hypot(u10, v10);
+    const windDir = windSpeed === null || windSpeed < 0.05 ? null :
+      ((Math.atan2(-u10, -v10) * 180 / Math.PI) + 360) % 360;
+    const windDirNames = ['Β','ΒΒΑ','ΒΑ','ΑΒΑ','Α','ΑΝΑ','ΝΑ','ΝΝΑ','Ν','ΝΝΔ','ΝΔ','ΔΝΔ','Δ','ΔΒΔ','ΒΔ','ΒΒΔ'];
+    const windDirGreek = windDir === null ? null : windDirNames[Math.round(windDir / 22.5) % 16];
+    const windSpeedKmh = windSpeed === null ? null : windSpeed * 3.6;
+    const height = getGridHeight(D || {}, activeGridPoint) ?? getGridHeight(S || {}, activeGridPoint);
+    let humidity = valueAtGrid(D?.RH2 || D?.rh2 || D?.RH, index, activeGridPoint);
+    if (humidity === null) {
+      const q2 = valueAtGrid(D?.Q2, index, activeGridPoint);
+      let psfc = valueAtGrid(D?.PSFC, index, activeGridPoint);
+      if (psfc !== null && psfc < 2000) psfc *= 100;
+      if (q2 !== null && psfc !== null && temp !== null && q2 > 0 && psfc > 0) {
+        const e = (q2 * psfc) / (0.622 + 0.378 * q2);
+        const es = 611.2 * Math.exp((17.67 * temp) / (temp + 243.5));
+        humidity = Math.max(0, Math.min(100, 100 * e / es));
+      }
+    }
+    $('gpCoords').textContent = `${activeGridPoint.lat.toFixed(5)}°N, ${activeGridPoint.lon.toFixed(5)}°E`;
+    $('gpTemp').innerHTML = `${formatValue(temp)}<span class="gp-unit"> °C</span>`;
+    $('gpWind').innerHTML = windSpeedKmh === null ? '—' : `${windSpeedKmh.toFixed(1)}<span class="gp-unit"> km/h</span>`;
+    $('gpWindDir').textContent = windDirGreek === null ? 'Διεύθυνση —' : `Από ${windDirGreek}`;
+    $('gpHeight').innerHTML = height === null ? '—' : `${formatValue(height, 0)}<span class="gp-unit"> m</span>`;
+    $('gpHumidity').innerHTML = humidity === null ? '—' : `${formatValue(humidity, 0)}<span class="gp-unit"> %</span>`;
+    drawGridChart(activeGridPoint);
+    return;
   } else {
     $('gpRainLabel').textContent = 'Υετός';
     $('gpRainSub').textContent = 'RAIN · mm';
