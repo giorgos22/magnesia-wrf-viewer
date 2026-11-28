@@ -78,9 +78,6 @@ html, body, #map {
   background: linear-gradient(145deg, #30363b, #202428);
   border-color: var(--cyan);
 }
-.gp-skew-button:disabled{cursor:not-allowed;opacity:.58;filter:saturate(.45)}
-.gp-skew-button:disabled .gp-value{color:#9aa7b8}
-.gp-skew-button:disabled:active{border-color:var(--line)}
 @media(max-width:600px){
   .drawer-toggle-btn{top:14px !important;right:auto !important;left:calc(182px - 3vw) !important;transform:none !important;}
   .drawer-toggle-btn.open{left:calc(182px - 3vw) !important;right:auto !important;}
@@ -370,17 +367,6 @@ body.grid-point-open #drawerToggle { display:none !important; }
 .gp-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; background:#ff9848; }
 .gp-dot.rain { background:#48baff; }
 .gp-foot { margin-top:11px; color:#8296af; font-size:11px; line-height:1.45; }
-.gp-skew-button { width:100%; text-align:left; color:inherit; cursor:pointer; font:inherit; }
-.gp-skew-button .gp-value { color:#45d7ff; font-size:21px; }
-.gp-skew-button:active { border-color:#45d7ff; }
-.skew-modal { position:absolute; z-index:1500; inset:0; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(2,8,18,.72); backdrop-filter:blur(5px); }
-.skew-modal.open { display:flex; }
-.skew-card { width:min(430px, calc(100vw - 36px)); max-height: min(72vh, 540px); overflow:auto; padding:13px; color:#e2e8f0; background:rgba(13,22,39,.98); border:1px solid #30445f; border-radius:14px; box-shadow:0 12px 38px #000b; }
-.skew-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px; }
-.skew-head h3 { margin:0; color:#45d7ff; font-size:14px; }
-.skew-head button { border:0; background:transparent; color:#9aabc0; font-size:25px; cursor:pointer; }
-#skewCanvas { display:block; width:100%; height:300px; background:#101c30; border:1px solid #2b3b54; border-radius:8px; }
-@media(max-width:600px) { .skew-card { width:min(390px,calc(100vw - 36px)); } }
 
 @media (max-width:600px) {
   .grid-point-panel {
@@ -615,7 +601,7 @@ body.drawer-menu-open .legend {
       <div class="gp-card"><div class="gp-label">Άνεμος 10 m</div><div class="gp-value" id="gpWind">—</div><div class="gp-sub" id="gpWindDir">U10 / V10</div></div>
       <div class="gp-card"><div class="gp-label">Υψόμετρο πλέγματος</div><div class="gp-value" id="gpHeight">--</div><div class="gp-sub">Μόνο εφόσον παρέχεται από τα δεδομένα</div></div>
       <div class="gp-card"><div class="gp-label">Σχετική υγρασία</div><div class="gp-value" id="gpHumidity">—</div><div class="gp-sub">RH · %</div></div>
-      <button class="gp-card gp-skew-button" id="openSkewT" type="button" disabled aria-disabled="true" title="Προσωρινά εκτός λειτουργίας"><div class="gp-label">Κατακόρυφο προφίλ</div><div class="gp-value">Skew‑T</div><div class="gp-sub">Προσωρινά εκτός λειτουργίας</div></button>
+      <div class="gp-card gp-dewpoint-card"><div class="gp-label">Σημείο δρόσου</div><div class="gp-value" id="gpDewpoint">—</div><div class="gp-sub" id="gpDewpointSub">Td · °C</div></div>
     </div>
     <div class="gp-chart-wrap">
       <div class="gp-chart-title">Πρόγνωση σημείου – επόμενες 48 ώρες</div>
@@ -625,13 +611,7 @@ body.drawer-menu-open .legend {
     <div class="gp-foot" id="gpAvailability">Οι τιμές προέρχονται από το ενεργό χρονικό βήμα του WRF.</div>
   </div>
 </section>
-<section id="skewModal" class="skew-modal" role="dialog" aria-modal="true" aria-labelledby="skewTitle">
-  <div class="skew-card">
-    <div class="skew-head"><h3 id="skewTitle">Skew‑T · Κατακόρυφο προφίλ</h3><button id="closeSkewT" type="button" aria-label="Κλείσιμο">×</button></div>
-    <canvas id="skewCanvas" height="300"></canvas>
-    <div id="skewStatus" class="gp-foot">Για το πραγματικό διάγραμμα απαιτείται εξαγωγή κατακόρυφων πεδίων θερμοκρασίας, υγρασίας και πίεσης από τα αρχεία WRF.</div>
-  </div>
-</section>
+
 <button id="modelInfoToggle" class="top-brand" type="button" aria-label="Πληροφορίες μοντέλου WRF MAGNESIA 3,5 km" title="Πληροφορίες μοντέλου" aria-haspopup="dialog" aria-controls="infoModal">WRF MAGNESIA 3,5 km <span aria-hidden="true" style="font-size:15px;margin-left:6px">ⓘ</span></button>
 
 <button id="placeSearchToggle" class="place-search-toggle" type="button" aria-label="Αναζήτηση τοποθεσίας" title="Αναζήτηση τοποθεσίας" aria-expanded="false">
@@ -867,6 +847,44 @@ function getUpperRecordIndex(wrfIndex, wrfTimes) {
     if (Number.isFinite(t) && d < delta) { best = i; delta = d; }
   });
   return delta <= 30 * 60 * 1000 ? best : -1;
+}
+
+function getUpperDewpointAtGrid(levelHpa, wrfIndex, wrfTimes, point) {
+  const upper = window.WRF_UPPER_TEMP;
+  const recordIndex = getUpperRecordIndex(wrfIndex, wrfTimes);
+  const encoded = upper?.dewpoint_levels?.[String(levelHpa)]?.[recordIndex];
+  const rows = Number(upper?.meta?.grid_rows);
+  const cols = Number(upper?.meta?.grid_cols);
+  const i = Number(point?.i), j = Number(point?.j);
+  if (!encoded || !Number.isInteger(rows) || !Number.isInteger(cols) ||
+      !Number.isInteger(i) || !Number.isInteger(j) ||
+      i < 0 || j < 0 || i >= rows || j >= cols) return null;
+  try {
+    const binary = atob(encoded);
+    if (binary.length !== rows * cols * 2) return null;
+    const offset = (i * cols + j) * 2;
+    const raw = new DataView(binaryToArrayBuffer(binary)).getInt16(offset, true);
+    if (raw === -32768) return null;
+    const value = raw / (Number(upper.meta.temperature_scale) || 100);
+    return Number.isFinite(value) ? value : null;
+  } catch (error) {
+    console.warn('Αδυναμία ανάγνωσης σημείου δρόσου:', error);
+    return null;
+  }
+}
+
+function updateGridDewpoint(D, index) {
+  const levels = [925, 850, 700, 500];
+  const slider = $('upperLevelSlider');
+  const levelIndex = Math.max(0, Math.min(3, Number(slider?.value || 0)));
+  const level = levels[levelIndex];
+  const td = activeGridPoint
+    ? getUpperDewpointAtGrid(level, index, D?.times, activeGridPoint)
+    : null;
+  $('gpDewpoint').innerHTML = td === null
+    ? '—'
+    : `${formatValue(td, 1)}<span class="gp-unit"> °C</span>`;
+  $('gpDewpointSub').textContent = `Td · ${level} hPa`;
 }
 
 function getSnowData() {
@@ -2025,134 +2043,12 @@ function drawGridChart(point) {
   const tw = ctx.measureText(last).width; ctx.fillText(last, w-pad.r-tw, h-5);
 }
 
-function drawSkewTemplate() {
-  const canvas = $('skewCanvas');
-  if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  const ratio = window.devicePixelRatio || 1;
-  const w = Math.max(260, rect.width), h = 320;
-  canvas.width = Math.round(w * ratio); canvas.height = Math.round(h * ratio);
-  const ctx = canvas.getContext('2d');
-  ctx.setTransform(ratio,0,0,ratio,0,0);
-  ctx.clearRect(0,0,w,h);
-  ctx.fillStyle = '#101c30'; ctx.fillRect(0,0,w,h);
-
-  const D = getWRFData();
-  const index = Math.max(0, Math.min((D?.PROFILE?.length || 1)-1, Number($('timeSlider')?.value || 0)));
-  const profile = D?.PROFILE?.[index];
-  const pressure = profile?.pressure_hpa;
-  const temperature = profile?.temperature_c;
-  const qvapor = profile?.qvapor_gkg;
-  const heights = profile?.height_msl_m;
-
-  if (!profile || !Array.isArray(pressure) || !Array.isArray(temperature) ||
-      !Array.isArray(qvapor) || pressure.length !== temperature.length ||
-      pressure.length !== qvapor.length) {
-    ctx.fillStyle='#dbe7f5'; ctx.font='12px Arial'; ctx.textAlign='center';
-    ctx.fillText('Δεν βρέθηκαν έγκυρα κατακόρυφα δεδομένα WRF',w/2,h/2);
-    $('skewStatus').textContent='Ελέγξτε PROFILE, pressure_hpa, temperature_c και qvapor_gkg στο wrf_data.js.';
-    return;
-  }
-
-  const levels = pressure.map((p,i)=>({
-    p:Number(p), t:Number(temperature[i]), q:Number(qvapor[i]),
-    z:Array.isArray(heights) ? Number(heights[i]) : NaN
-  })).filter(v=>Number.isFinite(v.p) && v.p>0 && Number.isFinite(v.t) && Number.isFinite(v.q) && v.q>=0)
-    .sort((a,b)=>b.p-a.p);
-
-  if (levels.length < 3) {
-    $('skewStatus').textContent=`Ανεπαρκή έγκυρα επίπεδα: ${levels.length}`;
-    return;
-  }
-
-  const l=43, r=34, t=25, b=30, pw=w-l-r, ph=h-t-b;
-  const pBottom=1000, pTop=50, tMin=-80, tMax=40;
-  const yP = p => t + (Math.log(pBottom)-Math.log(p))/(Math.log(pBottom)-Math.log(pTop))*ph;
-  const xT = (temp,p) => l + ((temp-tMin)/(tMax-tMin))*pw + 0.18*pw*(Math.log(pBottom/p)/Math.log(pBottom/pTop));
-
-  ctx.lineWidth=1; ctx.strokeStyle='rgba(148,163,184,.30)';
-  [1000,900,800,700,600,500,400,300,200,150,100,70,50].forEach(p=>{
-    const y=yP(p);
-    ctx.beginPath();ctx.moveTo(l,y);ctx.lineTo(w-r,y);ctx.stroke();
-    ctx.fillStyle='#a9b8ca';ctx.font='9px Arial';ctx.textAlign='right';
-    ctx.fillText(String(p),l-5,y+3);
-  });
-
-  for(let temp=-80;temp<=40;temp+=10){
-    ctx.beginPath();ctx.strokeStyle='rgba(148,163,184,.18)';
-    ctx.moveTo(xT(temp,pBottom),yP(pBottom));
-    ctx.lineTo(xT(temp,pTop),yP(pTop));ctx.stroke();
-    ctx.fillStyle='#a9b8ca';ctx.font='9px Arial';ctx.textAlign='center';
-    ctx.fillText(`${temp}°`,xT(temp,pBottom),h-9);
-  }
-
-  if (levels.some(v=>Number.isFinite(v.z))) {
-    [1000,850,700,500,300,200,100].forEach(p=>{
-      const candidates=levels.filter(v=>Number.isFinite(v.z)).sort((a,b)=>b.p-a.p);
-      let z=null;
-      for(let i=0;i<candidates.length-1;i++){
-        const a=candidates[i], c=candidates[i+1];
-        if(p<=a.p && p>=c.p){
-          const f=(Math.log(a.p)-Math.log(p))/(Math.log(a.p)-Math.log(c.p));
-          z=a.z+f*(c.z-a.z); break;
-        }
-      }
-      if(z!==null && Number.isFinite(z)){
-        ctx.fillStyle='#8295ad';ctx.font='8px Arial';ctx.textAlign='left';
-        ctx.fillText(`${(z/1000).toFixed(1)}`,w-r+4,yP(p)+3);
-      }
-    });
-  }
-
-  const dewpoints = levels.map(v=>{
-    if(v.q<=0) return null;
-    const mixingRatio=v.q/1000;
-    const e=(mixingRatio*v.p)/(0.622+mixingRatio);
-    if(!(e>0)) return null;
-    const ln=Math.log(e/6.112);
-    const td=(243.5*ln)/(17.67-ln);
-    return Number.isFinite(td) ? td : null;
-  });
-
-  function drawTrace(values,color,width) {
-    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineJoin='round';ctx.lineCap='round';
-    let started=false;
-    levels.forEach((v,i)=>{
-      const value=values[i], p=v.p;
-      if(value===null || !Number.isFinite(value) || p<pTop || p>pBottom){started=false;return;}
-      const xx=xT(value,p), yy=yP(p);
-      if(!started){ctx.moveTo(xx,yy);started=true;} else ctx.lineTo(xx,yy);
-    });
-    ctx.stroke();
-  }
-
-  ctx.save();ctx.beginPath();ctx.rect(l,t,pw,ph);ctx.clip();
-  drawTrace(dewpoints,'#42c8ff',2.2);
-  drawTrace(levels.map(v=>v.t),'#ff9850',2.5);
-  ctx.restore();
-
-  ctx.fillStyle='#ff9850';ctx.font='bold 10px Arial';ctx.textAlign='left';ctx.fillText('T',l+5,t+12);
-  ctx.fillStyle='#42c8ff';ctx.fillText('Td',l+20,t+12);
-  ctx.fillStyle='#dbe7f5';ctx.font='10px Arial';ctx.textAlign='center';
-  ctx.fillText('Skew‑T · Κωφοί',l+pw/2,13);
-
-  const meta=D.meta?.profile_location;
-  const loc=meta ? `Προφίλ Κωφοί · ${Number(meta.grid_lat).toFixed(3)}°N, ${Number(meta.grid_lon).toFixed(3)}°E` : 'Κατακόρυφο προφίλ WRF';
-  const time=D.times?.[index] ? String(D.times[index]).replace('T',' ').slice(0,16) : '';
-  const validTd=dewpoints.filter(v=>v!==null).length;
-  $('skewStatus').textContent=`${loc} · ${time} UTC · ${levels.length}/${pressure.length} έγκυρα επίπεδα · Td: ${validTd} επίπεδα · Ύψος δεξιά σε km MSL`;
-}
-const skewModal = $('skewModal');
-$('openSkewT').addEventListener('click', () => { skewModal.classList.add('open'); requestAnimationFrame(drawSkewTemplate); });
-$('timeSlider').addEventListener('input', () => { if (skewModal.classList.contains('open')) drawSkewTemplate(); });
-$('closeSkewT').addEventListener('click', () => skewModal.classList.remove('open'));
-skewModal.addEventListener('click', e => { if (e.target === skewModal) skewModal.classList.remove('open'); });
-
 function updateGridPanel() {
   if (!activeGridPoint) return;
   const D = getWRFData();
   const index = Number($('timeSlider').value) || 0;
   const temp = valueAtGrid(D?.T2, index, activeGridPoint);
+  updateGridDewpoint(D || {}, index);
   const selectedField = getSelectedField();
   const rainHours = Number($('rainPeriod')?.value || 24);
   let rain = valueAtGrid(D?.RAIN_HOURLY || D?.RAIN, index, activeGridPoint);
@@ -2239,8 +2135,8 @@ function updateGridPanel() {
   $('gpHeight').innerHTML = height === null ? '—' : `${formatValue(height, 0)}<span class="gp-unit"> m</span>`;
   $('gpHumidity').innerHTML = humidity === null ? '—' : `${formatValue(humidity, 0)}<span class="gp-unit"> %</span>`;
   $('gpAvailability').textContent = humidity === null
-    ? 'Η υγρασία θα εμφανιστεί όταν υπάρχει RH2 ή τα πεδία Q2 και PSFC στα εξαγόμενα δεδομένα. Το Skew‑T χρειάζεται κατακόρυφα επίπεδα από τα αρχεία WRF.'
-    : 'Η σχετική υγρασία υπολογίζεται από τα διαθέσιμα πεδία WRF. Το Skew‑T θα συνδεθεί με τα κατακόρυφα προφίλ στην επόμενη φάση.';
+    ? 'Η υγρασία θα εμφανιστεί όταν υπάρχει RH2 ή τα πεδία Q2 και PSFC στα εξαγόμενα δεδομένα. Το σημείο δρόσου αντλείται από τα ισοβαρικά πεδία του wrf_upper_temp.js.'
+    : 'Η σχετική υγρασία υπολογίζεται από τα διαθέσιμα πεδία WRF. Το σημείο δρόσου εμφανίζεται από το wrf_upper_temp.js στο επιλεγμένο ισοβαρικό επίπεδο.';
   drawGridChart(activeGridPoint);
 }
 function openGridPanel(point) {
